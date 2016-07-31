@@ -187,6 +187,7 @@ var InnScreen = React.createClass({
     //apostrophes break the syntax highlighting
     var message;
     var buttons = [];
+    var key = 0;
 
     //if you need to heal
     if(this.state.cost !== 0){
@@ -196,7 +197,7 @@ var InnScreen = React.createClass({
       //if you can afford it
       if(this.props.player.money >= this.state.cost){
         //button with cost is visible
-        buttons.push(<ActionButton action={this.pay} text={"Pay " + this.state.cost} />);
+        buttons.push(<ActionButton action={this.pay} text={"Pay " + this.state.cost} key={key++}/>);
       } else {
         //if you can't afford it, inform user
         message += "\nIt doesn't look like you can affort it.";
@@ -206,7 +207,7 @@ var InnScreen = React.createClass({
         message = "You're looking mighty healthy.  Now, scram!";
     }
 
-    buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub" />);
+    buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub" key={key++} />);
 
     return (
       <div>

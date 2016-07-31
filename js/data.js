@@ -116,5 +116,11 @@ var bosses = [
     initialText: "Bonjour!  I am Glass Joseph!  Please be gentle.",
     health: 20,
     attack: 5
+  },
+  {
+    name: "Brass Tack",
+    initialText: "Let's get down to it.",
+    health: 35,
+    attack: 7
   }
 ]
