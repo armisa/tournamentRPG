@@ -58,7 +58,7 @@ var HubScreen = React.createClass({
         <h1>Hub World:</h1>
         <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" />
         <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Train" />
-        <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Fight" />
+        <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Boss" />
         <ScreenButton game={this.props.game} screen={InnScreen} text="Inn" />
       </div>
     );
@@ -196,10 +196,13 @@ var WinScreen = React.createClass({
 
 var GameEndScreen = React.createClass({
   render: function() {
-    var message = "You beat the entire game!  You're a champion!\nCredits:\nEverything: Aaron Isaacman";
+    var key = 0;
+
+    var message = ["You beat the entire game!  You're a champion!", <br key={key++} />, <br key={key++} />, "Credits:", <br key={key++} />, "Everything: Aaron Isaacman"];
     return (
       <div>
       <h1>{message}</h1>
+      <ScreenButton game={this.props.game} screen={IntroScreen} text="Why not play again?" />
       </div>
     );
   }
