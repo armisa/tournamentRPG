@@ -67,13 +67,34 @@ var HubScreen = React.createClass({
 
 //screen where upgrades are purchased
 var UpgradeScreen = React.createClass({
+  getInitialState: function() {
+    return {
+      message: "Welcome, my pretty!  I have potions of all sorts to make you stronger!"
+    }
+  },
   render: function() {
     return (
       <div>
       <h1>Upgrade!</h1>
+      <h3 style={{float: "right"}}>Current Money: {this.props.player.money}</h3>
+      <h3>{this.state.message}</h3>
+      <br />
+      <ActionButton action={this.buy.bind(this,"maxHealth")} text={"Max Health Potion! Cost: " + shopPrices["maxHealth"]} />
+      <ActionButton action={this.buy.bind(this,"maxAttack")} text={"Max Attack Potion! Cost: " + shopPrices["maxAttack"]} />
+      <ActionButton action={this.buy.bind(this,"minAttack")} text={"Min Attack Potion! Cost: " + shopPrices["minAttack"]} />
+      <ActionButton action={this.buy.bind(this,"defense")} text={"Defense Potion! Cost: " + shopPrices["defense"]} />
       <ScreenButton game={this.props.game} screen={HubScreen} text="Back" />
       </div>
     );
+  },
+  buy: function(stat) {
+    if(this.props.player.money >= shopPrices[stat]){
+      this.setState({message: "Thank you for your patronage.  I hope you don't mind if I snipped some of your hair."});
+      this.props.player[stat]++;
+      this.props.player.money -= shopPrices[stat];
+    } else {
+      this.setState({message: "You don't quite have enough for that, my pretty.  Perhaps if you sold me some of your toes..."});
+    }
   }
 });
 
@@ -121,14 +142,15 @@ var FightScreen = React.createClass({
   },
   attack: function() {
     var damage = numBetween(this.props.player.minAttack, this.props.player.maxAttack);
+    var incomingDamage = calculateDamage(this.state.currentEnemy.attack, this.props.player.defense);
 
     this.setState({
       statusText: this.props.player.name + " attacks for " + damage + " damage! \n" +
-        this.state.currentEnemy.name + " hits back for " + this.state.currentEnemy.attack + " damage!"
+        this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!"
     });
 
-    this.props.player.currentHealth = takeDamage(this.props.player.currentHealth, this.state.currentEnemy.attack);
-    this.state.currentEnemy.currentHealth = takeDamage(this.state.currentEnemy.currentHealth, damage);
+    incomingDamage <= this.props.player.currentHealth ? this.props.player.currentHealth -= incomingDamage : this.props.player.currentHealth = 0;
+    damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
 
     //check for player lose
     if(this.props.player.currentHealth <= 0) {

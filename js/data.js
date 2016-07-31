@@ -30,16 +30,18 @@ var arrayRandom = function(array) {
 };
 
 /**
-* Calculates final health after some amount of damage, useful for its Minimum
-* value of zero to be returned
+* Calculates the final damage given some damage and defense.
+* Useful for its minimum value of 1 and defaulted defense value
 *
-* @param {Number} health The current health
-* @param {Number} damage The amount of damage for the health to sustain
-* @return {Number} The halth, minus the damage.  Minimum value of zero.
+* @param {Number} damage The amount of damage potentially taken
+* @param {Number} defense The amount of defense to be subtracted
+* @return {Number} A minimum of 1, value of damage - defense
 **/
-var takeDamage = function(health, damage){
-  var currentHealth = health - damage;
-  return Math.max(currentHealth, 0);
+var calculateDamage = function(damage, defense){
+  if (!defense){
+    defense = 0;
+  }
+  return Math.max(damage - defense, 1);
 }
 
 
@@ -87,6 +89,13 @@ var Enemy = function(options) {
   this.maxHealth = options.health;
   this.currentHealth = options.health;
   this.attack = options.attack;
+};
+
+var shopPrices = {
+  maxHealth: 25,
+  maxAttack: 30,
+  minAttack: 30,
+  defense: 50
 };
 
 var trainingEnemies = [
