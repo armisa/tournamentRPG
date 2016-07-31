@@ -105,6 +105,8 @@ var FightScreen = React.createClass({
       buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Run" key={key++} />);
     } else if(this.state.status === "won") {
       buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings" extraProps={{boss: !this.props.extraProps.training}} key={key++} />);
+    } else if(this.state.status === "lost") {
+      buttons.push(<ScreenButton game={this.props.game} screen={LoseScreen} text="Be dead X_X" key={key++} />);
     }
 
     return (
@@ -130,7 +132,10 @@ var FightScreen = React.createClass({
 
     //check for player lose
     if(this.props.player.currentHealth <= 0) {
-      this.props.game.setScreen(LoseScreen);
+      this.setState({
+        statusText: "You died!",
+        status: "lost"
+      });
     } else if(this.state.currentEnemy.currentHealth <= 0) { //check for player win
         this.setState({
           statusText: "The enemy " + this.state.currentEnemy.name + " is dead!",
@@ -160,17 +165,30 @@ var WinScreen = React.createClass({
     if(this.props.extraProps.boss){
       this.props.player.currentBoss++;
       if(this.props.player.currentBoss === bosses.length){
+        this.props.game.setScreen(GameEndScreen)
         this.setState({currentMessage: "YOU BEAT THE WHOLE GAME!  'grats, brah."});
       }
     }
   }
 });
 
-var LoseScreen = React.createClass({
+var GameEndScreen = React.createClass({
   render: function() {
+    var message = "You beat the entire game!  You're a champion!\nCredits:\nEverything: Aaron Isaacman";
     return (
       <div>
-        <h1>YOU LOSE!</h1>
+      <h1>{message}</h1>
+      </div>
+    );
+  }
+});
+
+var LoseScreen = React.createClass({
+  render: function() {
+    var message = "Sorry you died, brah.  Why not try again?"; //for syntax recognition purposes
+    return (
+      <div>
+        <h1>{message}</h1>
         <ScreenButton game={this.props.game} screen={IntroScreen} text="Play Again" />
       </div>
     );
@@ -185,14 +203,14 @@ var InnScreen = React.createClass({
   },
   render: function() {
     //apostrophes break the syntax highlighting
-    var message;
+    var message = [];
     var buttons = [];
     var key = 0;
 
     //if you need to heal
     if(this.state.cost !== 0){
       //prompt the user
-      message = "It'll run ya " + this.state.cost + " gold for enough nights to heal up those wounds.";
+      message.push("It'll run ya " + this.state.cost + " gold for enough nights to heal up those wounds.");
 
       //if you can afford it
       if(this.props.player.money >= this.state.cost){
@@ -200,11 +218,12 @@ var InnScreen = React.createClass({
         buttons.push(<ActionButton action={this.pay} text={"Pay " + this.state.cost} key={key++}/>);
       } else {
         //if you can't afford it, inform user
-        message += "\nIt doesn't look like you can affort it.";
+        message.push(<br key={key++} />);
+        message.push("It doesn't look like you can affort it.");
       }
     } else {
         //user is healthy
-        message = "You're looking mighty healthy.  Now, scram!";
+        message.push("You're looking mighty healthy.  Now, scram!");
     }
 
     buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub" key={key++} />);
