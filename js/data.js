@@ -70,16 +70,31 @@ var characters = {
   }
 };
 
-var Enemy = function(name, initialText, health, attack) {
-  this.name = name;
-  this.initialText = initialText;
-  this.maxHealth = health;
-  this.currentHealth = health;
-  this.attack = attack;
+var Enemy = function(options) {
+  this.name = options.name;
+  this.initialText = options.initialText;
+  this.maxHealth = options.health;
+  this.currentHealth = options.health;
+  this.attack = options.attack;
 };
 
 var trainingEnemies = [
-  new Enemy("Imp", "An angry Imp appears!", 10, 3),
-  new Enemy("Pixie", "A small pixie is looking for a fight!", 7, 4),
-  new Enemy("Sea Nymph", "A sea nymph stands before you, ready to battle!", 15, 2)
+  {
+    name: "Imp",
+    initialText: "An angry Imp appears!",
+    health: 10,
+    attack: 3
+  },
+  {
+    name: "Pixie",
+    initialText: "A small pixie is looking for a fight!",
+    health: 7,
+    attack: 4
+  },
+  {
+    name: "Sea Nymph",
+    initialText: "A sea nymph stands before you, ready to battle!",
+    health: 15,
+    attack: 2
+  }
 ];

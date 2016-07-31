@@ -75,8 +75,7 @@ var FightScreen = React.createClass({
   getInitialState: function() {
     //if we're just training
     if(this.props.extraProps.training){
-      var enemy = arrayRandom(trainingEnemies);
-      enemy.currentHealth = enemy.maxHealth;
+      var enemy = new Enemy(arrayRandom(trainingEnemies));
       return {
         training: true,
         currentEnemy: enemy,
