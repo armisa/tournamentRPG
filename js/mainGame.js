@@ -76,6 +76,7 @@ var FightScreen = React.createClass({
     //if we're just training
     if(this.props.extraProps.training){
       var enemy = arrayRandom(trainingEnemies);
+      enemy.currentHealth = enemy.maxHealth;
       return {
         training: true,
         currentEnemy: enemy,
@@ -91,14 +92,23 @@ var FightScreen = React.createClass({
   render: function() {
     var title = this.state.training ? "Train" : "Fight";
 
+    var buttons = [];
+    var key = 0;
+
+    if(this.state.status === "fighting"){
+      buttons.push(<ActionButton action={this.attack} text="Attack" key={key++} />);
+      buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Run" key={key++} />);
+    } else if(this.state.status === "won") {
+      buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings" key={key++} />);
+    }
+
     return (
       <div>
       <h1>{title}!</h1>
       <HealthBar current={this.props.player.currentHealth} max={this.props.player.maxHealth} name={this.props.player.name} style={{width: "30%", display: "inline-block"}} />
       <HealthBar current={this.state.currentEnemy.currentHealth} max={this.state.currentEnemy.maxHealth} name={this.state.currentEnemy.name} style={{width: "30%", float: "right"}} />
       <p>{this.state.statusText}</p>
-      <ActionButton action={this.attack} text="Attack" />
-      <ScreenButton game={this.props.game} screen={HubScreen} text="Run" />
+      {buttons}
       </div>
     );
   },
@@ -125,6 +135,20 @@ var FightScreen = React.createClass({
   }
 });
 
+var WinScreen = React.createClass({
+  render: function() {
+    return (
+      <div>
+        <h3>Current money: {this.props.player.money}</h3>
+        <ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub!" />
+      </div>
+    );
+  },
+  componentWillMount: function() {
+    this.props.player.money += 10;
+  }
+});
+
 var LoseScreen = React.createClass({
   render: function() {
     return (
@@ -134,7 +158,7 @@ var LoseScreen = React.createClass({
       </div>
     );
   }
-})
+});
 
 var ActionButton = React.createClass({
   render: function() {
