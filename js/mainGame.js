@@ -53,6 +53,7 @@ var HubScreen = React.createClass({
         <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" />
         <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Train" />
         <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Fight" />
+        <ScreenButton game={this.props.game} screen={InnScreen} text="Inn" />
       </div>
     );
   }
@@ -158,6 +159,52 @@ var LoseScreen = React.createClass({
     );
   }
 });
+
+var InnScreen = React.createClass({
+  getInitialState: function() {
+    return {
+      cost: this.props.player.maxHealth - this.props.player.currentHealth
+    };
+  },
+  render: function() {
+    //apostrophes break the syntax highlighting
+    var message;
+    var buttons = [];
+
+    //if you need to heal
+    if(this.state.cost !== 0){
+      //prompt the user
+      message = "It'll run ya " + this.state.cost + " gold for enough nights to heal up those wounds.";
+
+      //if you can afford it
+      if(this.props.player.money >= this.state.cost){
+        //button with cost is visible
+        buttons.push(<ActionButton action={this.pay} text={"Pay " + this.state.cost} />);
+      } else {
+        //if you can't afford it, inform user
+        message += "\nIt doesn't look like you can affort it.";
+      }
+    } else {
+        //user is healthy
+        message = "You're looking mighty healthy.  Now, scram!";
+    }
+
+    buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub" />);
+
+    return (
+      <div>
+        <h3>{message}</h3>
+        {buttons}
+      </div>
+    );
+  },
+  pay: function() {
+    //subtract cost, heal player, and update Inn screen
+    this.props.player.money -= this.state.cost;
+    this.props.player.currentHealth = this.props.player.maxHealth;
+    this.setState({cost: 0});
+  }
+})
 
 var ActionButton = React.createClass({
   render: function() {
