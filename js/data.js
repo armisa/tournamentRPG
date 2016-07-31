@@ -42,7 +42,21 @@ var calculateDamage = function(damage, defense){
     defense = 0;
   }
   return Math.max(damage - defense, 1);
-}
+};
+
+var validSpecials = function(character){
+  if(!character || !character.specials){
+    return [];
+  }
+
+  return $.map(character.specials, function(value, key){
+    if(value.available){
+      return { name: key, performSpecial: value.performSpecial };
+    } else {
+      return null;
+    }
+  });
+};
 
 
 /** Characters **/
@@ -61,14 +75,32 @@ var nameArray = [
 ];
 
 var characters = {
-  peasant: {
+  beggar: {
     name: arrayRandom(nameArray),
     maxHealth: 25,
     currentHealth: 25,
     minAttack: 5,
     maxAttack: 7,
     defense: 0,
-    money: 10
+    money: 10,
+    specials: {
+      Beg: {
+        performSpecial: function(player, enemy) {
+          var mon = Math.floor(Math.random() * 4) + 2;
+          player.money += mon;
+          return "You beg, and the " + enemy.name + " gives you " + mon + " moneys.";
+        },
+        available: true
+      },
+      Fireball: {
+        performSpecial: function(player, enemy) {
+          var damage = 10;
+          damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
+          return "You throw a fireball, dealing a flat " + damage + " damage!";
+        },
+        available: true
+      }
+    }
   }
 };
 
@@ -80,6 +112,7 @@ var Player = function(options) {
   this.maxAttack = options.maxAttack;
   this.defense = options.defense;
   this.money = options.money;
+  this.specials = options.specials;
   this.currentBoss = 0;
 };
 

@@ -67,7 +67,7 @@ var IntroScreen = React.createClass({
   },
   componentWillMount: function() {
     this.props.game.setState({displayHUD: false});
-    this.props.game.newPlayer(characters["peasant"]);
+    this.props.game.newPlayer(characters["beggar"]);
   },
   componentWillUnmount: function() {
     this.props.game.setState({displayHUD: true});
@@ -153,8 +153,13 @@ var FightScreen = React.createClass({
     var key = 0;
 
     if(this.state.status === "fighting"){
-      buttons.push(<ActionButton action={this.attack} text="Attack" key={key++} />);
-      buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Run" key={key++} />);
+      buttons.push(<ActionButton action={this.playerAction.bind(this, this.attack)} text="Attack" key={key++} />);
+      //add specials
+      var self = this;
+      validSpecials(this.props.player).forEach(function(special){
+        buttons.push(<ActionButton action={self.playerAction.bind(self, special.performSpecial.bind(self))} text={special.name} classes="btn-info" key={key++} />);
+      });
+      buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Run" classes="btn-danger" key={key++} />);
     } else if(this.state.status === "won") {
       buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings" extraProps={{boss: !this.props.extraProps.training}} key={key++} />);
     } else if(this.state.status === "lost") {
@@ -166,23 +171,42 @@ var FightScreen = React.createClass({
       <h1>{title}!</h1>
       <HealthBar current={this.props.player.currentHealth} max={this.props.player.maxHealth} name={this.props.player.name} style={{width: "30%", display: "inline-block"}} />
       <HealthBar current={this.state.currentEnemy.currentHealth} max={this.state.currentEnemy.maxHealth} name={this.state.currentEnemy.name} style={{width: "30%", float: "right"}} />
-      <p>{this.state.statusText}</p>
+      <h3 style={{textAlign: "center"}}>{this.state.statusText}</h3>
       {buttons}
       </div>
     );
   },
-  attack: function() {
-    var damage = numBetween(this.props.player.minAttack, this.props.player.maxAttack);
-    var incomingDamage = calculateDamage(this.state.currentEnemy.attack, this.props.player.defense);
 
-    this.setState({
-      statusText: this.props.player.name + " attacks for " + damage + " damage! \n" +
-        this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!"
-    });
+  attack: function(player, enemy) {
+    //determine damage
+    var damage = numBetween(player.minAttack, player.maxAttack);
 
-    incomingDamage <= this.props.player.currentHealth ? this.props.player.currentHealth -= incomingDamage : this.props.player.currentHealth = 0;
+    //calculate enemy damage and apply
     damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
 
+    //return text describing situation
+    return this.props.player.name + " attacks for " + damage + " damage! \n";
+  },
+  //player phase
+  playerAction: function(action){
+    this.enemyAction(action(this.props.player, this.state.currentEnemy));
+  },
+  //enemy phase
+  enemyAction: function(text) {
+    //calculate enemy damage
+    var incomingDamage = calculateDamage(this.state.currentEnemy.attack, this.props.player.defense);
+
+    //add on to the current text to inform the user
+    text += "\n " + this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!";
+
+    //calculate and apply damage
+    incomingDamage <= this.props.player.currentHealth ? this.props.player.currentHealth -= incomingDamage : this.props.player.currentHealth = 0;
+
+    //checkstate to see if anyone has died
+    this.checkState(text);
+  },
+  //see if the battle is over
+  checkState: function(text) {
     //check for player lose
     if(this.props.player.currentHealth <= 0) {
       this.setState({
@@ -194,6 +218,10 @@ var FightScreen = React.createClass({
           statusText: "The enemy " + this.state.currentEnemy.name + " is dead!",
           status: "won"
         });
+    } else { //if nobody died
+      this.setState({
+        statusText: text
+      })
     }
   }
 });
@@ -220,7 +248,6 @@ var WinScreen = React.createClass({
       this.props.player.currentBoss++;
       if(this.props.player.currentBoss === bosses.length){
         this.props.game.setScreen(GameEndScreen)
-        this.setState({currentMessage: "YOU BEAT THE WHOLE GAME!  'grats, brah."});
       }
     }
   }
@@ -302,9 +329,11 @@ var InnScreen = React.createClass({
 
 var ActionButton = React.createClass({
   render: function() {
+    var classes = "btn ";
+    classes += this.props.classes || "btn-primary";
     return (
       <div style={{textAlign: "center"}}>
-        <button className="btn btn-primary" onClick={this.props.action}>{this.props.text}</button>
+        <button className={classes} onClick={this.props.action}>{this.props.text}</button>
       </div>
     );
   }
@@ -312,9 +341,11 @@ var ActionButton = React.createClass({
 
 var ScreenButton = React.createClass({
   render: function() {
+    var classes = "btn ";
+    classes += this.props.classes || "btn-primary";
     return (
       <div style={{textAlign: "center"}}>
-      <button className="btn btn-primary" onClick={this.props.game.setScreen.bind(this.props.game, this.props.screen, this.props.extraProps)}>{this.props.text}</button>
+      <button className={classes} onClick={this.props.game.setScreen.bind(this.props.game, this.props.screen, this.props.extraProps)}>{this.props.text}</button>
       <br />
       </div>
     );
