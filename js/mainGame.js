@@ -2,7 +2,7 @@
 var Game = React.createClass({
   getInitialState: function() {
     return {
-      player: characters["peasant"],
+      player: {},
       currentScreen: IntroScreen //the starting screen
     };
   },
@@ -25,6 +25,9 @@ var Game = React.createClass({
       this.setState({extraProps: null});
     }
     this.setState({currentScreen: screen});
+  },
+  newPlayer: function(options){
+    this.setState({player: new Player(options)});
   }
 });
 
@@ -39,6 +42,9 @@ var IntroScreen = React.createClass({
         <ScreenButton game={this.props.game} screen={HubScreen} text="Continue" />
       </div>
     );
+  },
+  componentWillMount: function() {
+    this.props.game.newPlayer(characters["peasant"]);
   }
 });
 
@@ -74,20 +80,19 @@ var UpgradeScreen = React.createClass({
 //screen where all the fights happen
 var FightScreen = React.createClass({
   getInitialState: function() {
+    var enemy;
     //if we're just training
     if(this.props.extraProps.training){
-      var enemy = new Enemy(arrayRandom(trainingEnemies));
-      return {
-        training: true,
-        currentEnemy: enemy,
-        statusText: enemy.initialText,
-        status: "fighting"
-      };
+      enemy = new Enemy(arrayRandom(trainingEnemies));
     } else { //if we're trying to progress the story
-      return {
-        training: false
-      };
+      enemy = new Enemy(bosses[this.props.player.currentBoss]);
     }
+    return {
+      training: this.props.extraProps.training,
+      currentEnemy: enemy,
+      statusText: enemy.initialText,
+      status: "fighting"
+    };
   },
   render: function() {
     var title = this.state.training ? "Train" : "Fight";
@@ -99,7 +104,7 @@ var FightScreen = React.createClass({
       buttons.push(<ActionButton action={this.attack} text="Attack" key={key++} />);
       buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Run" key={key++} />);
     } else if(this.state.status === "won") {
-      buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings" key={key++} />);
+      buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings" extraProps={{boss: !this.props.extraProps.training}} key={key++} />);
     }
 
     return (
@@ -136,9 +141,15 @@ var FightScreen = React.createClass({
 });
 
 var WinScreen = React.createClass({
+  getInitialState: function() {
+    return {
+      currentMessage: ""
+    }
+  },
   render: function() {
     return (
       <div>
+        <h1>{this.state.currentMessage}</h1>
         <h3>Current money: {this.props.player.money}</h3>
         <ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub!" />
       </div>
@@ -146,6 +157,12 @@ var WinScreen = React.createClass({
   },
   componentWillMount: function() {
     this.props.player.money += 10;
+    if(this.props.extraProps.boss){
+      this.props.player.currentBoss++;
+      if(this.props.player.currentBoss === bosses.length){
+        this.setState({currentMessage: "YOU BEAT THE WHOLE GAME!  'grats, brah."});
+      }
+    }
   }
 });
 

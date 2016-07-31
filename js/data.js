@@ -70,6 +70,17 @@ var characters = {
   }
 };
 
+var Player = function(options) {
+  this.name = options.name;
+  this.maxHealth = options.maxHealth;
+  this.currentHealth = options.currentHealth;
+  this.minAttack = options.minAttack;
+  this.maxAttack = options.maxAttack;
+  this.defense = options.defense;
+  this.money = options.money;
+  this.currentBoss = 0;
+};
+
 var Enemy = function(options) {
   this.name = options.name;
   this.initialText = options.initialText;
@@ -98,3 +109,12 @@ var trainingEnemies = [
     attack: 2
   }
 ];
+
+var bosses = [
+  {
+    name: "Glass Joseph",
+    initialText: "Bonjour!  I am Glass Joseph!  Please be gentle.",
+    health: 20,
+    attack: 5
+  }
+]
