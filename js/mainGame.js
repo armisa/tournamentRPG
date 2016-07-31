@@ -3,7 +3,8 @@ var Game = React.createClass({
   getInitialState: function() {
     return {
       player: {},
-      currentScreen: IntroScreen //the starting screen
+      currentScreen: IntroScreen, //the starting screen
+      displayHUD: false
     };
   },
   //only rendering another screen, passing self and any extra properties
@@ -13,8 +14,21 @@ var Game = React.createClass({
       player: this.state.player,
       extraProps: this.state.extraProps
     };
+    var hud = [];
+    var key = 0;
+    if(this.state.displayHUD){
+      hud.push(<h4 style={{float: "left", margin: "25px"}} key={key++}>{this.state.player.name}: {this.state.player.currentHealth}/{this.state.player.maxHealth}</h4>);
+      hud.push(<h4 style={{float: "right", margin: "25px"}} key={key++}>Money: {this.state.player.money}</h4>);
+      hud.push(<br key={key++} />);
+      hud.push(<br key={key++} />);
+    }
     return (
-      React.createElement(this.state.currentScreen, props)
+      <div>
+      {hud}
+      <div style={{margin: '40px'}}>
+        <MainPanel currentScreen={this.state.currentScreen} props={props} />
+      </div>
+      </div>
     );
   },
   //sets the current screen.  Props is optional, if additional properties are needed
@@ -31,6 +45,14 @@ var Game = React.createClass({
   }
 });
 
+var MainPanel = React.createClass({
+  render: function() {
+    return (
+      React.createElement(this.props.currentScreen, this.props.props)
+    )
+  }
+})
+
 // First screen displayed
 var IntroScreen = React.createClass({
   render: function() {
@@ -44,7 +66,11 @@ var IntroScreen = React.createClass({
     );
   },
   componentWillMount: function() {
+    this.props.game.setState({displayHUD: false});
     this.props.game.newPlayer(characters["peasant"]);
+  },
+  componentWillUnmount: function() {
+    this.props.game.setState({displayHUD: true});
   }
 });
 
@@ -76,7 +102,6 @@ var UpgradeScreen = React.createClass({
     return (
       <div>
       <h1>Upgrade!</h1>
-      <h3 style={{float: "right"}}>Current Money: {this.props.player.money}</h3>
       <h3>{this.state.message}</h3>
       <br />
       <ActionButton action={this.buy.bind(this,"maxHealth")} text={"Max Health Potion! Cost: " + shopPrices["maxHealth"]} />
@@ -100,6 +125,12 @@ var UpgradeScreen = React.createClass({
 
 //screen where all the fights happen
 var FightScreen = React.createClass({
+  componentWillMount: function() {
+    this.props.game.setState({displayHUD: false});
+  },
+  componentWillUnmount: function() {
+    this.props.game.setState({displayHUD: true});
+  },
   getInitialState: function() {
     var enemy;
     //if we're just training
@@ -174,10 +205,11 @@ var WinScreen = React.createClass({
     }
   },
   render: function() {
+    var message = "You won and got 10 moneys!";
     return (
       <div>
         <h1>{this.state.currentMessage}</h1>
-        <h3>Current money: {this.props.player.money}</h3>
+        <h3>{message}</h3>
         <ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub!" />
       </div>
     );

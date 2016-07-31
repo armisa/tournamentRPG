@@ -52,11 +52,11 @@ var nameArray = [
   "Barry",
   "Chris",
   "David",
-  "Eric",
+  "Edward",
   "Frank",
   "Gary",
   "Henry",
-  "Ian",
+  "Ivan",
   "James"
 ];
 
