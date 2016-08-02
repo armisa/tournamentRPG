@@ -79,13 +79,16 @@ var HubScreen = React.createClass({
   render: function() {
     var trainingProps = {training: true};
     var fightProps = {training: false};
+    var buttons = [
+      <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" key={1} classes="btn-success" />,
+      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Train" key={2} />,
+      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Boss" key={3} classes="btn-danger" />,
+      <ScreenButton game={this.props.game} screen={InnScreen} text="Inn" key={4} classes="btn-info" />
+    ];
     return (
       <div>
         <h1>Hub World:</h1>
-        <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" />
-        <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Train" />
-        <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Boss" />
-        <ScreenButton game={this.props.game} screen={InnScreen} text="Inn" />
+        <ButtonMenu buttons={buttons} />
       </div>
     );
   }
@@ -99,16 +102,19 @@ var UpgradeScreen = React.createClass({
     }
   },
   render: function() {
+    var buttons = [
+      <ActionButton action={this.buy.bind(this,"maxHealth")} text={"Max Health Potion! Cost: " + shopPrices["maxHealth"]} key={1} classes="btn-info" />,
+      <ActionButton action={this.buy.bind(this,"maxAttack")} text={"Max Attack Potion! Cost: " + shopPrices["maxAttack"]} key={2} classes="btn-info" />,
+      <ActionButton action={this.buy.bind(this,"minAttack")} text={"Min Attack Potion! Cost: " + shopPrices["minAttack"]} key={3} classes="btn-info" />,
+      <ActionButton action={this.buy.bind(this,"defense")} text={"Defense Potion! Cost: " + shopPrices["defense"]} key={4} classes="btn-info" />,
+      <ScreenButton game={this.props.game} screen={HubScreen} text="Back" key={5} />
+    ];
     return (
       <div>
       <h1>Upgrade!</h1>
       <h3>{this.state.message}</h3>
       <br />
-      <ActionButton action={this.buy.bind(this,"maxHealth")} text={"Max Health Potion! Cost: " + shopPrices["maxHealth"]} />
-      <ActionButton action={this.buy.bind(this,"maxAttack")} text={"Max Attack Potion! Cost: " + shopPrices["maxAttack"]} />
-      <ActionButton action={this.buy.bind(this,"minAttack")} text={"Min Attack Potion! Cost: " + shopPrices["minAttack"]} />
-      <ActionButton action={this.buy.bind(this,"defense")} text={"Defense Potion! Cost: " + shopPrices["defense"]} />
-      <ScreenButton game={this.props.game} screen={HubScreen} text="Back" />
+        <ButtonMenu buttons={buttons} />
       </div>
     );
   },
@@ -117,6 +123,7 @@ var UpgradeScreen = React.createClass({
       this.setState({message: "Thank you for your patronage.  I hope you don't mind if I snipped some of your hair."});
       this.props.player[stat]++;
       this.props.player.money -= shopPrices[stat];
+      this.props.game.forceUpdate();
     } else {
       this.setState({message: "You don't quite have enough for that, my pretty.  Perhaps if you sold me some of your toes..."});
     }
@@ -172,7 +179,7 @@ var FightScreen = React.createClass({
       <HealthBar current={this.props.player.currentHealth} max={this.props.player.maxHealth} name={this.props.player.name} style={{width: "30%", display: "inline-block"}} />
       <HealthBar current={this.state.currentEnemy.currentHealth} max={this.state.currentEnemy.maxHealth} name={this.state.currentEnemy.name} style={{width: "30%", float: "right"}} />
       <h3 style={{textAlign: "center"}}>{this.state.statusText}</h3>
-      {buttons}
+      <ButtonMenu buttons={buttons} />
       </div>
     );
   },
@@ -303,7 +310,7 @@ var InnScreen = React.createClass({
       } else {
         //if you can't afford it, inform user
         message.push(<br key={key++} />);
-        message.push("It doesn't look like you can affort it.");
+        message.push("It doesn't look like you can afford it.");
       }
     } else {
         //user is healthy
@@ -315,7 +322,7 @@ var InnScreen = React.createClass({
     return (
       <div>
         <h3>{message}</h3>
-        {buttons}
+        <ButtonMenu buttons={buttons} />
       </div>
     );
   },
@@ -324,17 +331,28 @@ var InnScreen = React.createClass({
     this.props.player.money -= this.state.cost;
     this.props.player.currentHealth = this.props.player.maxHealth;
     this.setState({cost: 0});
+    this.props.game.forceUpdate();
   }
-})
+});
+
+var ButtonMenu = React.createClass({
+  render: function() {
+    return (
+      <div style={{textAlign: "center"}}>
+        <div className="btn-group-vertical">
+          {this.props.buttons}
+        </div>
+      </div>
+    );
+  }
+});
 
 var ActionButton = React.createClass({
   render: function() {
     var classes = "btn ";
     classes += this.props.classes || "btn-primary";
     return (
-      <div style={{textAlign: "center"}}>
         <button className={classes} onClick={this.props.action}>{this.props.text}</button>
-      </div>
     );
   }
 });
@@ -344,10 +362,7 @@ var ScreenButton = React.createClass({
     var classes = "btn ";
     classes += this.props.classes || "btn-primary";
     return (
-      <div style={{textAlign: "center"}}>
       <button className={classes} onClick={this.props.game.setScreen.bind(this.props.game, this.props.screen, this.props.extraProps)}>{this.props.text}</button>
-      <br />
-      </div>
     );
   }
 });

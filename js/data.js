@@ -125,10 +125,10 @@ var Enemy = function(options) {
 };
 
 var shopPrices = {
-  maxHealth: 25,
+  maxHealth: 15,
   maxAttack: 30,
   minAttack: 30,
-  defense: 50
+  defense: 75
 };
 
 var trainingEnemies = [
