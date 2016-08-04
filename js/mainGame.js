@@ -81,7 +81,7 @@ var HubScreen = React.createClass({
     var fightProps = {training: false};
     var buttons = [
       <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" key={1} classes="btn-success" />,
-      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Train" key={2} />,
+      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Explore" key={2} />,
       <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Boss" key={3} classes="btn-danger" />,
       <ScreenButton game={this.props.game} screen={InnScreen} text="Inn" key={4} classes="btn-info" />
     ];
@@ -163,12 +163,13 @@ var FightScreen = React.createClass({
       buttons.push(<ActionButton action={this.playerAction.bind(this, this.attack)} text="Attack" key={key++} />);
       //add specials
       var self = this;
-      validSpecials(this.props.player).forEach(function(special){
+      validItems(this.props.player.specials).forEach(function(special){
         buttons.push(<ActionButton action={self.playerAction.bind(self, special.performSpecial.bind(self))} text={special.name} classes="btn-info" key={key++} />);
       });
       buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Run" classes="btn-danger" key={key++} />);
     } else if(this.state.status === "won") {
-      buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings" extraProps={{boss: !this.props.extraProps.training}} key={key++} />);
+      buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings"
+        extraProps={{reward: this.state.currentEnemy.reward, enemy: this.state.currentEnemy}} key={key++} />);
     } else if(this.state.status === "lost") {
       buttons.push(<ScreenButton game={this.props.game} screen={LoseScreen} text="Be dead X_X" key={key++} />);
     }
@@ -236,26 +237,25 @@ var FightScreen = React.createClass({
 var WinScreen = React.createClass({
   getInitialState: function() {
     return {
-      currentMessage: ""
+      currentMessage: "You win!"
     }
   },
   render: function() {
-    var message = "You won and got 10 moneys!";
     return (
       <div>
-        <h1>{this.state.currentMessage}</h1>
-        <h3>{message}</h3>
+        <h3>{this.state.currentMessage}</h3>
+        <h3>{this.state.subMessage}</h3>
         <ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub!" />
       </div>
     );
   },
-  componentWillMount: function() {
-    this.props.player.money += 10;
-    if(this.props.extraProps.boss){
-      this.props.player.currentBoss++;
-      if(this.props.player.currentBoss === bosses.length){
-        this.props.game.setScreen(GameEndScreen)
-      }
+  componentDidMount: function() {
+    //grant player reward
+    var reward = this.props.extraProps.reward || basicReward;
+    reward.call(this);
+    //end game check
+    if(this.props.player.currentBoss === bosses.length){
+      this.props.game.setScreen(GameEndScreen)
     }
   }
 });

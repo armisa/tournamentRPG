@@ -44,14 +44,21 @@ var calculateDamage = function(damage, defense){
   return Math.max(damage - defense, 1);
 };
 
-var validSpecials = function(character){
-  if(!character || !character.specials){
+/**
+* Finds only the valid items in a map and returns those in an array
+*
+* @param {Object} itemMap A map comtaining some valid/invalid items
+*   @param {Boolean} available Whether the item should be in the return array
+* @return {Array} An array of values from only the available items
+**/
+var validItems = function(itemMap){
+  if(!itemMap){
     return [];
   }
 
-  return $.map(character.specials, function(value, key){
+  return $.map(itemMap, function(value, key){
     if(value.available){
-      return { name: key, performSpecial: value.performSpecial };
+      return value;
     } else {
       return null;
     }
@@ -74,6 +81,32 @@ var nameArray = [
   "James"
 ];
 
+var specials = {
+  Beg: {
+    performSpecial: function(player, enemy) {
+      var mon = Math.floor(Math.random() * 4) + 2;
+      player.money += mon;
+      return "You beg, and the " + enemy.name + " gives you " + mon + " moneys.";
+    },
+    description: "Begs the enemey for some spare change"
+  },
+  Fireball: {
+    performSpecial: function(player, enemy) {
+      var damage = 7
+      damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
+      return "You throw a fireball, dealing " + damage + " damage!";
+    },
+    description: "Deals a flat " + 7 + " damage"
+  }
+};
+
+var Special = function(name, available){
+  this.name = name;
+  this.performSpecial = specials[name].performSpecial;
+  this.description = specials[name].description;
+  this.available = available || false;
+};
+
 var characters = {
   beggar: {
     name: arrayRandom(nameArray),
@@ -83,24 +116,10 @@ var characters = {
     maxAttack: 7,
     defense: 0,
     money: 10,
-    specials: {
-      Beg: {
-        performSpecial: function(player, enemy) {
-          var mon = Math.floor(Math.random() * 4) + 2;
-          player.money += mon;
-          return "You beg, and the " + enemy.name + " gives you " + mon + " moneys.";
-        },
-        available: true
-      },
-      Fireball: {
-        performSpecial: function(player, enemy) {
-          var damage = 10;
-          damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
-          return "You throw a fireball, dealing a flat " + damage + " damage!";
-        },
-        available: true
-      }
-    }
+    specials: [
+      new Special("Beg", true),
+      new Special("Fireball", false)
+    ]
   }
 };
 
@@ -122,6 +141,7 @@ var Enemy = function(options) {
   this.maxHealth = options.health;
   this.currentHealth = options.health;
   this.attack = options.attack;
+  this.reward = options.reward;
 };
 
 var shopPrices = {
@@ -152,17 +172,46 @@ var trainingEnemies = [
   }
 ];
 
+var bossCallback = function(money, message) {
+  this.props.player.currentBoss++;
+
+  //check if this was the final boss
+  if(this.props.player.currentBoss == bosses.length){
+    return;
+  }
+  this.props.player.money += money;
+
+  var special = this.props.player.specials[this.props.player.currentBoss];
+  //unlock new ability
+  if(this.props.player.currentBoss < this.props.player.specials.length){
+    special.available = true;
+  }
+  this.setState({currentMessage: message, subMessage: "New special: " + special.name + " unlocked! " + special.description });
+};
+
 var bosses = [
   {
     name: "Glass Joseph",
     initialText: "Bonjour!  I am Glass Joseph!  Please be gentle.",
     health: 20,
-    attack: 5
+    attack: 5,
+    reward: function() {
+      bossCallback.call(this, 50, "Noooooon! How could je lose?");
+    }
   },
   {
     name: "Brass Tack",
     initialText: "Let's get down to it.",
     health: 35,
-    attack: 7
+    attack: 7,
+    reward: function() {
+      bossCallback.call(this, 150, "Gaaah!  You're a sharp one.");
+    }
   }
-]
+];
+
+basicReward = function() {
+  var money = numBetween(7, 13);
+  this.setState({currentMessage: "You beat the " + this.props.extraProps.enemy.name + " and gained " + money + " moneys."});
+  this.props.player.money += money;
+};
