@@ -1,10 +1,31 @@
+/**
+* Turns an array into domelements.  Null value for line break
+*
+* @param {Array} array A list of strings or null values representing words to display
+* @param {String} tagType The type of tag to be rendered
+* @return {Array} Array of dom elements ready to be displayed
+**/
+var arrToDOM = function(array, tagType){
+  var domArray = [];
+  $.each(array, function(idx, val){
+    if(val){
+      domArray.push(React.createElement(tagType,{key: idx}, val));
+    } else {
+      domArray.push(<br key={idx} />);
+    }
+  });
+
+  return domArray;
+};
+
 // Highest level class
 var Game = React.createClass({
   getInitialState: function() {
     return {
       player: {},
       currentScreen: IntroScreen, //the starting screen
-      displayHUD: false
+      displayHUD: false,
+      availableClasses: {beggar: true}
     };
   },
   //only rendering another screen, passing self and any extra properties
@@ -40,7 +61,10 @@ var Game = React.createClass({
     }
     this.setState({currentScreen: screen});
   },
-  newPlayer: function(options){
+  newPlayer: function(options, name){
+    if(name){
+      options.name = name;
+    }
     this.setState({player: new Player(options)});
   }
 });
@@ -51,23 +75,55 @@ var MainPanel = React.createClass({
       React.createElement(this.props.currentScreen, this.props.props)
     )
   }
-})
+});
 
 // First screen displayed
 var IntroScreen = React.createClass({
+  getInitialState: function(){
+    return {
+      name: "",
+      class: "beggar",
+      ghost: "none"
+    }
+  },
   render: function() {
+    var text1 = "I, ";
+    var text2= ", of class ";
+    var dropdown = <span className="col-sm-1"><select className="form-control" onChange={this.classChange} value={this.state.class}>{arrToDOM(Object.keys(this.props.game.state.availableClasses), "option")}</select></span>;
+    var fl = {float: "left"};
+    var validated = this.state.name.length && this.state.class.length ? "inline-block" : "none";
     return (
       <div>
-        <h1>Welcome!</h1>
+        <h1>Tournament Waiver:</h1>
         <br />
-        <p>The tournament is about to begin!</p>
-        <ScreenButton game={this.props.game} screen={HubScreen} text="Continue" />
+        <h3><span style={fl}>{text1}</span><span className="col-sm-1"><input onInput={this.updateName} className="form-control" /></span>
+        <span style={fl}>{text2}</span>{dropdown}<br /><br />{waiverText1}<span style={{"text-decoration": this.state.ghost}} onClick={this.soulClick}>and my soul upon death</span>
+        {waiverText2}</h3><em style={{'font-size':'3em'}}>{this.state.name}</em> <br/> <br/>
+        <div style={{display: validated}}>
+        <ActionButton action={this.confirm} text="Proceed" />
+        </div>
       </div>
     );
   },
+  soulClick: function() {
+    this.setState({ghost: "line-through"});
+    //if ghost hasn't been unlocked yet, set flag to unlock on next death
+    if(!this.props.game.state.availableClasses.ghost){
+      this.props.game.setState({ghost: true});
+    }
+  },
+  classChange: function(evt) {
+    this.setState({class: evt.target.value});
+  },
+  confirm: function() {
+    this.props.game.newPlayer($.extend(true, {class: this.state.class}, characters[this.state.class]), this.state.name);
+    this.props.game.setScreen.call(this.props.game, HubScreen);
+  },
+  updateName: function(evt){
+    this.setState({name: evt.target.value});
+  },
   componentWillMount: function() {
     this.props.game.setState({displayHUD: false});
-    this.props.game.newPlayer(characters["beggar"]);
   },
   componentWillUnmount: function() {
     this.props.game.setState({displayHUD: true});
@@ -197,6 +253,7 @@ var FightScreen = React.createClass({
   },
   //player phase
   playerAction: function(action){
+    //player performs action() which enemyAction uses
     this.enemyAction(action(this.props.player, this.state.currentEnemy));
   },
   //enemy phase
@@ -275,11 +332,22 @@ var GameEndScreen = React.createClass({
 });
 
 var LoseScreen = React.createClass({
+  getInitialState: function(){
+    var message;
+    if (this.props.game.state.ghost) {
+      message = "New class: GHOST unlocked!  Now go scare some bad guys!";
+      var availableClasses = this.props.game.state.availableClasses;
+      availableClasses.ghost = true;
+      this.props.game.setState({ghost: false, availableClasses: availableClasses});
+    } else {
+      message = "Sorry you died, brah.  Why not try again?";
+    }
+    return { message: message };
+  },
   render: function() {
-    var message = "Sorry you died, brah.  Why not try again?"; //for syntax recognition purposes
     return (
       <div>
-        <h1>{message}</h1>
+        <h1>{this.state.message}</h1>
         <ScreenButton game={this.props.game} screen={IntroScreen} text="Play Again" />
       </div>
     );

@@ -97,6 +97,33 @@ var specials = {
       return "You throw a fireball, dealing " + damage + " damage!";
     },
     description: "Deals a flat " + 7 + " damage"
+  },
+  "Coin Toss": {
+    performSpecial: function(player, enemy) {
+      var damage = Math.floor(Math.random()*2)*20;
+      damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
+      //if we hit
+      if(damage){
+        return "You flipped heads and decided to attack for " + damage + " damage!";
+      } else {
+        return "You flipped tails and decided to just stand there and get beat up."
+      }
+    },
+    description: "Deals either " + 20 + " damage, or none."
+  },
+  Osmose: {
+    performSpecial: function(player, enemy) {
+      //determine damage and healing
+      var damage = Math.floor(Math.random()*3) + 2;
+      var healing = Math.floor(Math.random()*2) + 1;
+
+      //apply values
+      damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
+      player.currentHealth + healing > player.maxHealth ? player.currentHealth = player.maxHealth : player.currentHealth += healing;
+
+      return "You sucked away " + damage + " life from the enemy " + enemy.name + ", and gained " + healing + " health!";
+    },
+    description: "Deals a small amount of damage and heals a small amount of health"
   }
 };
 
@@ -117,8 +144,25 @@ var characters = {
     defense: 0,
     money: 10,
     specials: [
-      new Special("Beg", true),
-      new Special("Fireball", false)
+      "Beg",
+      "Fireball",
+      "Coin Toss",
+      "Osmose",
+    ]
+  },
+  ghost: {
+    name: arrayRandom(nameArray),
+    maxHealth: 15,
+    currentHealth: 15,
+    minAttack: 3,
+    maxAttack: 5,
+    defense: 2,
+    money: 0,
+    specials: [
+      "Beg",
+      "Fireball",
+      "Coin Toss",
+      "Osmose",
     ]
   }
 };
@@ -131,7 +175,10 @@ var Player = function(options) {
   this.maxAttack = options.maxAttack;
   this.defense = options.defense;
   this.money = options.money;
-  this.specials = options.specials;
+  this.specials = $.map(options.specials, function(special, idx){
+    return new Special(special, idx===0);
+  });
+  this.class = options.class || "unknown";
   this.currentBoss = 0;
 };
 
@@ -172,6 +219,13 @@ var trainingEnemies = [
   }
 ];
 
+/**
+* Increments player's boss state, gives a certain amount of money and unlocks specials!
+* Special is unlocked by setting the boss index's special to be available
+*
+* @param {Number} money Reward money
+* @param {String} message Victory screen message
+**/
 var bossCallback = function(money, message) {
   this.props.player.currentBoss++;
 
@@ -207,6 +261,15 @@ var bosses = [
     reward: function() {
       bossCallback.call(this, 150, "Gaaah!  You're a sharp one.");
     }
+  },
+  {
+    name: "Knuckle Sandwich",
+    initialText: "Oh goodness, you look famished.  Let me make you something!",
+    health: 55,
+    attack: 10,
+    reward: function() {
+      bossCallback.call(this, 300, "Don't worry, a lot of people don't like my sandwiches either.")
+    }
   }
 ];
 
@@ -214,4 +277,19 @@ basicReward = function() {
   var money = numBetween(7, 13);
   this.setState({currentMessage: "You beat the " + this.props.extraProps.enemy.name + " and gained " + money + " moneys."});
   this.props.player.money += money;
+
+  //special ghost rewards
+  if(this.props.player.class === "ghost"){
+    var healed = Math.floor(Math.random()*3) + 1;
+    var bonusCoins = Math.floor(Math.random()*4) + 2;
+    this.props.player.currentHealth = Math.min(this.props.player.maxHealth, this.props.player.currentHealth + healed);
+    this.props.player.money += bonusCoins;
+    this.setState({subMessage: "As a ghost, you have absorbed the soul of  " + this.props.extraProps.enemy.name +
+     " and healed by " + healed + " and got " + bonusCoins + " bonus coins!"});
+  }
 };
+
+var waiverText1 = "and consious mind and sound body, do hereby release the creators, staff, and all related parties of the tournament from any liabilities from blah blah blah... " +
+"promise not to violate any aformentioned rules of the tournament yadda yadda yadda... " +
+"offer my firstborn child, the entirety of my inheritance, ";
+var waiverText2 = " to the tournament and its staff to use as they see fit, yikkity yakkity please sign below:";
