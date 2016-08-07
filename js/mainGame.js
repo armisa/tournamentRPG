@@ -31,7 +31,7 @@ var Game = React.createClass({
       player: {},
       currentScreen: IntroScreen, //the starting screen
       displayHUD: false,
-      availableClasses: {beggar: true, ghost:true}
+      availableClasses: {beggar: true}
     };
   },
   //only rendering another screen, passing self and any extra properties
@@ -317,7 +317,7 @@ var WinScreen = React.createClass({
   },
   render: function() {
     return (
-      <div>
+      <div style={{textAlign: "center"}}>
         <h3>{this.state.currentMessage}</h3>
         <h3>{this.state.subMessage}</h3>
         <ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub!" />

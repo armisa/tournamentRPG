@@ -8,10 +8,6 @@
  * @return {Number} A number between the first two values, plus the base
  **/
 var numBetween = function(num1, num2) {
-  //0 is falsy, so whether it's undefined or 0, it'll come out as 0
-  if (!base) {
-    base = 0;
-  }
 
   var difference = 1 + Math.abs(num1 - num2);
   var base = Math.min(num1, num2);
@@ -30,34 +26,34 @@ var arrayRandom = function(array) {
 };
 
 /**
-* Calculates the final damage given some damage and defense.
-* Useful for its minimum value of 1 and defaulted defense value
-*
-* @param {Number} damage The amount of damage potentially taken
-* @param {Number} defense The amount of defense to be subtracted
-* @return {Number} A minimum of 1, value of damage - defense
-**/
-var calculateDamage = function(damage, defense){
-  if (!defense){
+ * Calculates the final damage given some damage and defense.
+ * Useful for its minimum value of 1 and defaulted defense value
+ *
+ * @param {Number} damage The amount of damage potentially taken
+ * @param {Number} defense The amount of defense to be subtracted
+ * @return {Number} A minimum of 1, value of damage - defense
+ **/
+var calculateDamage = function(damage, defense) {
+  if (!defense) {
     defense = 0;
   }
   return Math.max(damage - defense, 1);
 };
 
 /**
-* Finds only the valid items in a map and returns those in an array
-*
-* @param {Object} itemMap A map comtaining some valid/invalid items
-*   @param {Boolean} available Whether the item should be in the return array
-* @return {Array} An array of values from only the available items
-**/
-var validItems = function(itemMap){
-  if(!itemMap){
+ * Finds only the valid items in a map and returns those in an array
+ *
+ * @param {Object} itemMap A map comtaining some valid/invalid items
+ *   @param {Boolean} available Whether the item should be in the return array
+ * @return {Array} An array of values from only the available items
+ **/
+var validItems = function(itemMap) {
+  if (!itemMap) {
     return [];
   }
 
-  return $.map(itemMap, function(value, key){
-    if(value.available){
+  return $.map(itemMap, function(value, key) {
+    if (value.available) {
       return value;
     } else {
       return null;
@@ -84,7 +80,7 @@ var nameArray = [
 var specials = {
   Beg: {
     performSpecial: function(player, enemy) {
-      var mon = Math.floor(Math.random() * 4) + 2;
+      var mon = numBetween(2, 5);
       player.money += mon;
       return "You beg, and the " + enemy.name + " gives you " + mon + " moneys.";
     },
@@ -100,10 +96,10 @@ var specials = {
   },
   "Coin Toss": {
     performSpecial: function(player, enemy) {
-      var damage = Math.floor(Math.random()*2)*20;
+      var damage = numBetween(0, 1) * 20;
       damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
       //if we hit
-      if(damage){
+      if (damage) {
         return "You flipped heads and decided to attack for " + damage + " damage!";
       } else {
         return "You flipped tails and decided to just stand there and get beat up."
@@ -114,8 +110,8 @@ var specials = {
   Osmose: {
     performSpecial: function(player, enemy) {
       //determine damage and healing
-      var damage = Math.floor(Math.random()*3) + 2;
-      var healing = Math.floor(Math.random()*2) + 1;
+      var damage = numBetween(2, 4);
+      var healing = numBetween(1, 3);
 
       //apply values
       damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
@@ -124,10 +120,46 @@ var specials = {
       return "You sucked away " + damage + " life from the enemy " + enemy.name + ", and gained " + healing + " health!";
     },
     description: "Deals a small amount of damage and heals a small amount of health"
+  },
+  Possess: {
+    performSpecial: function(player, enemy) {
+      var damage = enemy.attack;
+      damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
+      return "You possessed the enemy, causing it to hurt itself for " + damage + " damage!";
+    },
+    description: "Deals damage to the enemy equal to the enemy's attack"
+  },
+  Curse: {
+    performSpecial: function(player, enemy) {
+      var damage = numBetween(13, 27);
+      var selfHarm = numBetween(2, 5);
+
+      //apply values
+      damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
+      player.currentHealth - selfHarm < 0 ? player.currentHealth = 0 : player.currentHealth -= selfHarm;
+
+      return "You hurt yourself " + selfHarm + ", but damaged the enemy " + enemy.name + " for " + damage + "!";
+    },
+    description: "Use some health to deal large amounts of damage"
+  },
+  "Soul Draw": {
+    performSpecial: function(player, enemy) {
+
+      //determine damage and healing
+      var damage = numBetween(5, 13);
+      var healing = numBetween(2, 4);
+
+      //apply values
+      damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
+      player.currentHealth + healing > player.maxHealth ? player.currentHealth = player.maxHealth : player.currentHealth += healing;
+
+      return "You drew " + damage + " life away from the enemy " + enemy.name + ", and gained " + healing + " health.";
+    },
+    description: "Draws from the enemy's soul for a moderate amount of damage and healing"
   }
 };
 
-var Special = function(name, available){
+var Special = function(name, available) {
   this.name = name;
   this.performSpecial = specials[name].performSpecial;
   this.description = specials[name].description;
@@ -154,15 +186,14 @@ var characters = {
     name: arrayRandom(nameArray),
     maxHealth: 15,
     currentHealth: 15,
-    minAttack: 3,
-    maxAttack: 5,
+    minAttack: 1,
+    maxAttack: 3,
     defense: 2,
     money: 0,
     specials: [
-      "Beg",
-      "Fireball",
-      "Coin Toss",
-      "Osmose",
+      "Possess",
+      "Curse",
+      "Soul Draw"
     ]
   }
 };
@@ -175,8 +206,8 @@ var Player = function(options) {
   this.maxAttack = options.maxAttack;
   this.defense = options.defense;
   this.money = options.money;
-  this.specials = $.map(options.specials, function(special, idx){
-    return new Special(special, idx===0);
+  this.specials = $.map(options.specials, function(special, idx) {
+    return new Special(special, idx === 0);
   });
   this.class = options.class || "unknown";
   this.currentBoss = 0;
@@ -198,98 +229,127 @@ var shopPrices = {
   defense: 75
 };
 
-var trainingEnemies = [
-  {
-    name: "Imp",
-    initialText: "An angry Imp appears!",
-    health: 10,
-    attack: 3
-  },
-  {
-    name: "Pixie",
-    initialText: "A small pixie is looking for a fight!",
-    health: 7,
-    attack: 4
-  },
-  {
-    name: "Sea Nymph",
-    initialText: "A sea nymph stands before you, ready to battle!",
-    health: 15,
-    attack: 2
-  }
-];
+var trainingEnemies = [{
+  name: "Imp",
+  initialText: "An angry Imp appears!",
+  health: 10,
+  attack: 3
+}, {
+  name: "Pixie",
+  initialText: "A small pixie is looking for a fight!",
+  health: 7,
+  attack: 4
+}, {
+  name: "Sea Nymph",
+  initialText: "A sea nymph stands before you, ready to battle!",
+  health: 15,
+  attack: 2
+}];
 
 /**
-* Increments player's boss state, gives a certain amount of money and unlocks specials!
-* Special is unlocked by setting the boss index's special to be available
-*
-* @param {Number} money Reward money
-* @param {String} message Victory screen message
-**/
+ * Increments player's boss state, gives a certain amount of money and unlocks specials!
+ * Special is unlocked by setting the boss index's special to be available
+ *
+ * @param {Number} money Reward money
+ * @param {String} message Victory screen message
+ **/
 var bossCallback = function(money, message) {
   this.props.player.currentBoss++;
 
   //check if this was the final boss
-  if(this.props.player.currentBoss == bosses.length){
+  if (this.props.player.currentBoss == bosses.length) {
     return;
   }
+  money = money || 0;
+  message = message || "";
   this.props.player.money += money;
 
   var special = this.props.player.specials[this.props.player.currentBoss];
-  //unlock new ability
-  if(this.props.player.currentBoss < this.props.player.specials.length){
-    special.available = true;
+  if (special) {
+    //unlock new ability
+    if (this.props.player.currentBoss < this.props.player.specials.length) {
+      special.available = true;
+    }
+    this.setState({
+      currentMessage: message,
+      subMessage: "New special: " + special.name + " unlocked! " + special.description
+    });
+  } else {
+    this.setState({
+      currentMessage: message
+    });
   }
-  this.setState({currentMessage: message, subMessage: "New special: " + special.name + " unlocked! " + special.description });
 };
 
-var bosses = [
-  {
-    name: "Glass Joseph",
-    initialText: "Bonjour!  I am Glass Joseph!  Please be gentle.",
-    health: 20,
-    attack: 5,
-    reward: function() {
-      bossCallback.call(this, 50, "Noooooon! How could je lose?");
-    }
-  },
-  {
-    name: "Brass Tack",
-    initialText: "Let's get down to it.",
-    health: 35,
-    attack: 7,
-    reward: function() {
-      bossCallback.call(this, 150, "Gaaah!  You're a sharp one.");
-    }
-  },
-  {
-    name: "Knuckle Sandwich",
-    initialText: "Oh goodness, you look famished.  Let me make you something!",
-    health: 55,
-    attack: 10,
-    reward: function() {
-      bossCallback.call(this, 300, "Don't worry, a lot of people don't like my sandwiches either.")
-    }
+var bosses = [{
+  name: "Glass Joseph",
+  initialText: "Bonjour!  I am Glass Joseph!  Please be gentle.",
+  health: 20,
+  attack: 5,
+  reward: function() {
+    bossCallback.call(this, 50, "Noooooon! How could je lose?");
   }
-];
+}, {
+  name: "Brass Tack",
+  initialText: "Let's get down to it.",
+  health: 35,
+  attack: 7,
+  reward: function() {
+    bossCallback.call(this, 150, "Gaaah!  You're a sharp one.");
+  }
+}, {
+  name: "Knuckle Sandwich",
+  initialText: "Oh goodness, you look famished.  Let me make you something!",
+  health: 55,
+  attack: 10,
+  reward: function() {
+    bossCallback.call(this, 300, "Don't worry, a lot of people don't like my sandwiches either.")
+  }
+}, {
+  name: "Steel Falcon",
+  initialText: "SCREEEEEE!  Sorry, my metal makes this awful sound sometimes.",
+  health: 75,
+  attack: 15,
+  reward: function() {
+    bossCallback.call(this, 500, "Gotta oil my joints next time.")
+  }
+}, {
+  name: "Diamond Destructo",
+  initialText: "You'll crack under pressure!",
+  health: 115,
+  attack: 17,
+  reward: function() {
+    bossCallback.call(this, 1000, "They say pressure makes diamonds.  I like you, kid!")
+  }
+}, {
+  name: "Lord Dark Death",
+  initialText: "My birthname was Philip Dinkle",
+  health: 200,
+  attack: 25,
+  reward: function() {
+    bossCallback.call(this);
+  }
+}];
 
 basicReward = function() {
   var money = numBetween(7, 13);
-  this.setState({currentMessage: "You beat the " + this.props.extraProps.enemy.name + " and gained " + money + " moneys."});
+  this.setState({
+    currentMessage: "You beat the " + this.props.extraProps.enemy.name + " and gained " + money + " moneys."
+  });
   this.props.player.money += money;
 
   //special ghost rewards
-  if(this.props.player.class === "ghost"){
-    var healed = Math.floor(Math.random()*3) + 1;
-    var bonusCoins = Math.floor(Math.random()*4) + 2;
+  if (this.props.player.class === "ghost") {
+    var healed = Math.floor(Math.random() * 3) + 1;
     this.props.player.currentHealth = Math.min(this.props.player.maxHealth, this.props.player.currentHealth + healed);
-    this.props.player.money += bonusCoins;
-    this.setState({subMessage: "As a ghost, you have absorbed the soul of  " + this.props.extraProps.enemy.name +
-     " and healed by " + healed + " and got " + bonusCoins + " bonus coins!"});
+    this.setState({
+      subMessage: "As a ghost, you have absorbed the soul of  " + this.props.extraProps.enemy.name +
+        " and healed by " + healed + "!"
+    });
   }
 };
 
 var waiverText1 = "and consious mind and sound body, do hereby release the creators, staff, and all related parties of the tournament from any liabilities from blah blah blah... " +
-"promise not to violate any aformentioned rules of the tournament yadda yadda yadda... " +
-"offer my firstborn child, the entirety of my inheritance, ";
+  "promise not to violate any aformentioned rules of the tournament yadda yadda yadda... " +
+  "offer my firstborn child, the entirety of my inheritance, ";
 var waiverText2 = " to the tournament and its staff to use as they see fit, yikkity yakkity please sign below:";
