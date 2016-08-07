@@ -1,15 +1,21 @@
+var DropdownButton = ReactBootstrap.DropdownButton;
+var SplitButton = ReactBootstrap.SplitButton;
+var MenuItem = ReactBootstrap.MenuItem;
+
 /**
 * Turns an array into domelements.  Null value for line break
 *
 * @param {Array} array A list of strings or null values representing words to display
 * @param {String} tagType The type of tag to be rendered
+* @param {Object} props Properties to be applied to each element of the array
 * @return {Array} Array of dom elements ready to be displayed
 **/
-var arrToDOM = function(array, tagType){
+var arrToDOM = function(array, tagType, props){
   var domArray = [];
   $.each(array, function(idx, val){
     if(val){
-      domArray.push(React.createElement(tagType,{key: idx}, val));
+      var currentProps = $.extend({key: idx}, props);
+      domArray.push(React.createElement(tagType, currentProps, val));
     } else {
       domArray.push(<br key={idx} />);
     }
@@ -25,7 +31,7 @@ var Game = React.createClass({
       player: {},
       currentScreen: IntroScreen, //the starting screen
       displayHUD: false,
-      availableClasses: {beggar: true}
+      availableClasses: {beggar: true, ghost:true}
     };
   },
   //only rendering another screen, passing self and any extra properties
@@ -82,22 +88,34 @@ var IntroScreen = React.createClass({
   getInitialState: function(){
     return {
       name: "",
-      class: "beggar",
+      class: "",
       ghost: "none"
     }
   },
   render: function() {
+    //text for syntax highlighting purposes
     var text1 = "I, ";
     var text2= ", of class ";
-    var dropdown = <span className="col-sm-1"><select className="form-control" onChange={this.classChange} value={this.state.class}>{arrToDOM(Object.keys(this.props.game.state.availableClasses), "option")}</select></span>;
+    //available class dropdown
+    var dropdown = [];
+    $.each(Object.keys(this.props.game.state.availableClasses), function(idx, val){
+      dropdown.push(<MenuItem eventKey={val} key={idx} onSelect={this.classChange}>{val.charAt(0).toUpperCase() + val.slice(1)}</MenuItem>)
+    }.bind(this));
+    var classDisplay = this.state.class ? this.state.class.charAt(0).toUpperCase() + this.state.class.slice(1) : "Select a Class";
+    //common style to use for some DOM elements here
     var fl = {float: "left"};
+    //must have a valid name and class to begin
     var validated = this.state.name.length && this.state.class.length ? "inline-block" : "none";
     return (
       <div>
         <h1>Tournament Waiver:</h1>
         <br />
         <h3><span style={fl}>{text1}</span><span className="col-sm-1"><input onInput={this.updateName} className="form-control" /></span>
-        <span style={fl}>{text2}</span>{dropdown}<br /><br />{waiverText1}<span style={{"text-decoration": this.state.ghost}} onClick={this.soulClick}>and my soul upon death</span>
+        <span style={$.extend({marginRight: "15px"},fl)}>{text2}</span>
+        <DropdownButton bsStyle="warning" title={classDisplay}>
+          {dropdown}
+        </DropdownButton>
+        <br /><br />{waiverText1}<span style={{"text-decoration": this.state.ghost}} onClick={this.soulClick}>and my soul upon death</span>
         {waiverText2}</h3><em style={{'font-size':'3em'}}>{this.state.name}</em> <br/> <br/>
         <div style={{display: validated}}>
         <ActionButton action={this.confirm} text="Proceed" />
@@ -113,7 +131,7 @@ var IntroScreen = React.createClass({
     }
   },
   classChange: function(evt) {
-    this.setState({class: evt.target.value});
+    this.setState({class: evt});
   },
   confirm: function() {
     this.props.game.newPlayer($.extend(true, {class: this.state.class}, characters[this.state.class]), this.state.name);
