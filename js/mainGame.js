@@ -240,7 +240,7 @@ var FightScreen = React.createClass({
       validItems(this.props.player.specials).forEach(function(special){
         buttons.push(<ActionButton action={self.playerAction.bind(self, special.performSpecial.bind(self))} text={special.name} classes="btn-info" key={key++} />);
       });
-      buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Run" classes="btn-danger" key={key++} />);
+      buttons.push(<ActionButton action={this.playerAction.bind(this, this.run)} text="Run" classes="btn-danger" key={key++} />);
     } else if(this.state.status === "won") {
       buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings"
         extraProps={{reward: this.state.currentEnemy.reward, enemy: this.state.currentEnemy}} key={key++} />);
@@ -269,26 +269,42 @@ var FightScreen = React.createClass({
     //return text describing situation
     return this.props.player.name + " attacks for " + damage + " damage! \n";
   },
+
   //player phase
   playerAction: function(action){
     //player performs action() which enemyAction uses
     this.enemyAction(action(this.props.player, this.state.currentEnemy));
   },
+
   //enemy phase
-  enemyAction: function(text) {
+  enemyAction: function(playerResult) {
+    if(typeof playerResult === "string"){
+      playerResult = { text: playerResult };
+    }
+
+    if (playerResult.enemyAction && typeof playerResult.enemyAction === "function") {
+      playerResult.enemyAction();
+      return;
+    }
+
     //calculate enemy damage
     var incomingDamage = calculateDamage(this.state.currentEnemy.attack, this.props.player.defense);
 
     //add on to the current text to inform the user
-    text += "\n " + this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!";
+    playerResult.text += "\n " + this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!";
 
     //calculate and apply damage
     incomingDamage <= this.props.player.currentHealth ? this.props.player.currentHealth -= incomingDamage : this.props.player.currentHealth = 0;
 
     //checkstate to see if anyone has died
-    this.checkState(text);
+    this.checkState(playerResult.text);
   },
-  //see if the battle is over
+
+  /**
+  * see if the battle is over
+  *
+  * @param {String} text The default text if neither combatant has died
+  */
   checkState: function(text) {
     //check for player lose
     if(this.props.player.currentHealth <= 0) {
@@ -305,6 +321,24 @@ var FightScreen = React.createClass({
       this.setState({
         statusText: text
       })
+    }
+  },
+
+  //runs if successful (uses chance to calculate chance of running)
+  run: function(player, enemy) {
+    var chance = player.runChance || 75;
+    var attempt = numBetween(0, 100);
+
+    //if attempt was successful
+    if(attempt < chance) {
+      return {
+        text: "You got away!",
+        enemyAction: function() {
+          this.props.game.setScreen.call(this.props.game, HubScreen);
+        }.bind(this)
+      };
+    } else {
+      return "You couldn't get away!";
     }
   }
 });

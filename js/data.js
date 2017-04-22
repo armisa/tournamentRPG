@@ -240,8 +240,8 @@ var trainingEnemies = [{
   health: 7,
   attack: 4
 }, {
-  name: "Sea Nymph",
-  initialText: "A sea nymph stands before you, ready to battle!",
+  name: "Goblin",
+  initialText: "A goblin stands before you, ready to battle!",
   health: 15,
   attack: 2
 }];
@@ -334,7 +334,7 @@ var bosses = [{
 basicReward = function() {
   var money = numBetween(7, 13);
   this.setState({
-    currentMessage: "You beat the " + this.props.extraProps.enemy.name + " and gained " + money + " moneys."
+    currentMessage: "You beat the " + this.props.extraProps.enemy.name + " and gained " + money + " coins."
   });
   this.props.player.money += money;
 
@@ -349,7 +349,7 @@ basicReward = function() {
   }
 };
 
-var waiverText1 = "and consious mind and sound body, do hereby release the creators, staff, and all related parties of the tournament from any liabilities from blah blah blah... " +
+var waiverText1 = "and sound mind and body, do hereby release the creators, staff, and all related parties of the tournament from any liabilities from blah blah blah... " +
   "promise not to violate any aformentioned rules of the tournament yadda yadda yadda... " +
   "offer my firstborn child, the entirety of my inheritance, ";
 var waiverText2 = " to the tournament and its staff to use as they see fit, yikkity yakkity please sign below:";
