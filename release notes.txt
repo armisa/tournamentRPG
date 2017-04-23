@@ -3,7 +3,7 @@ Current version: 1.1
 v1.0 - Game can played through
 v1.1 - Run feature rebalanced with random chance for failure
 v1.2 - New secret class added
-v1.3 - Status screen added
+v1.3 - Status screen / tooltip descriptions added
 v1.4 - Upgrade shop / Inn rebalanced
-v1.5 - Background updated from blue color
-v1.6 - Added more difficult explore areas
+v1.5 - Explore to unlock new areas (from a progress bar) / find stores and stuff
+v1.6 - Background updated from blue color

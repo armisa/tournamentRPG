@@ -1,7 +1,7 @@
 /** Functions **/
 
 /**
- * Returns a number between the first and second parameter.
+ * Returns a number between the first and second parameter inclusive
  *
  * @param {Number} num1 The lower bound
  * @param {Number} num2 The upper bound
@@ -124,7 +124,7 @@ var specials = {
   Possess: {
     performSpecial: function(player, enemy) {
       var damage = enemy.attack;
-      damage <= this.state.currentEnemy.currentHealth ? this.state.currentEnemy.currentHealth -= damage : this.state.currentEnemy.currentHealth = 0;
+      damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
       return "You possessed the enemy, causing it to hurt itself for " + damage + " damage!";
     },
     description: "Deals damage to the enemy equal to the enemy's attack"
@@ -156,6 +156,67 @@ var specials = {
       return "You drew " + damage + " life away from the enemy " + enemy.name + ", and gained " + healing + " health.";
     },
     description: "Draws from the enemy's soul for a moderate amount of damage and healing"
+  },
+  "Hypnosis": {
+    performSpecial: function(player, enemy) {
+      var damage = enemy.attack;
+      damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
+      var statusStr = "You hypnotized the enemy " + enemy.name + ", causing it to deal " + damage + " damage to itself.";
+      if(numBetween(0,1) === 0) {
+        return statusStr;
+      } else {
+        return {
+          enemyAction: function() {
+            this.checkState([statusStr + "  The enemy " + enemy.name + " could not do anything in response!"]);
+          }
+        };
+      }
+    },
+    description: "Causes enemy to deal weakened damage to itself and offers a chance that the enemy will not attack this turn"
+  },
+  "Flower Pick": {
+    performSpecial: function(player, enemy) {
+      var outcome = numBetween(1,3);
+      //get money
+      if(outcome === 1){
+        var mon = numBetween(2, 5);
+        player.money += mon;
+        return "You picked a flower and found " + mon + " moneys in its roots!";
+      } else if(outcome === 2) {
+        var heal = numBetween(3, 6);
+        player.currentHealth + heal > player.maxHealth ? player.currentHealth = player.maxHealth : player.currentHealth += heal;
+        return "You picked a flower and healed " + heal + " from its beauty!";
+      } else {
+        var damage = numBetween(4, 6);
+        damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
+        return "You picked a flower and did " + damage + " damage to the enemy " + enemy.name + " due to allergies."
+      }
+    },
+    description: "Gives money, health, or damage with a random chance for each"
+  },
+  "Finger Paint": {
+    performSpecial: function(player, enemy){
+      var heal = numBetween(1, 20);
+      var paintings = [
+        "a cabin",
+        "the ocean",
+        "a forest",
+        "a mountain",
+        "a fruit basket",
+        "a majestic tiger"
+      ];
+      var picture = arrayRandom(paintings);
+      player.currentHealth + heal > player.maxHealth ? player.currentHealth = player.maxHealth : player.currentHealth += heal;
+      return "You painted a picture of " + picture + " and healed " + heal + " from the experience";
+    },
+    description: "Restores a broad range of possible amounts of health.  It's just so... therapeutic."
+  },
+  "Dev Cheat": {
+    performSpecial: function(player, enemy){
+      enemy.currentHealth = 0;
+      return "Enemy died because you're a filthy cheater."
+    },
+    description: "Lets you cheat like the filthy cheater you are."
   }
 };
 
@@ -179,7 +240,8 @@ var characters = {
       "Beg",
       "Fireball",
       "Coin Toss",
-      "Osmose",
+      "Hypnosis",
+      "Osmose"
     ]
   },
   ghost: {
@@ -193,7 +255,21 @@ var characters = {
     specials: [
       "Possess",
       "Curse",
-      "Soul Draw"
+      "Soul Draw",
+      "Hypnosis"
+    ]
+  },
+  darkdeathLord: {
+    name: arrayRandom(nameArray),
+    maxHealth: 125,
+    currentHealth: 125,
+    minAttack: 1,
+    maxAttack: 2,
+    defense: 0,
+    money: 0,
+    specials: [
+      "Flower Pick",
+      "Finger Paint"
     ]
   }
 };
@@ -271,12 +347,12 @@ var bossCallback = function(money, message) {
       special.available = true;
     }
     this.setState({
-      currentMessage: message,
+      currentMessage: [message],
       subMessage: "New special: " + special.name + " unlocked! " + special.description
     });
   } else {
     this.setState({
-      currentMessage: message
+      currentMessage: [message]
     });
   }
 };

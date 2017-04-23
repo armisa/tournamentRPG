@@ -12,6 +12,11 @@ var MenuItem = ReactBootstrap.MenuItem;
 **/
 var arrToDOM = function(array, tagType, props){
   var domArray = [];
+
+  //force array type
+  if(!Array.isArray(array)){
+    array = [array];
+  }
   $.each(array, function(idx, val){
     if(val){
       var currentProps = $.extend({key: idx}, props);
@@ -139,6 +144,11 @@ var IntroScreen = React.createClass({
   },
   updateName: function(evt){
     this.setState({name: evt.target.value});
+    if(evt.target.value.toUpperCase() === "PHILIP DINKLE"){
+      var availableClasses = this.props.game.state.availableClasses;
+      availableClasses.darkdeathLord = true;
+      this.props.game.setState({availableClasses: availableClasses});
+    }
   },
   componentWillMount: function() {
     this.props.game.setState({displayHUD: false});
@@ -156,7 +166,7 @@ var HubScreen = React.createClass({
     var buttons = [
       <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" key={1} classes="btn-success" />,
       <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Explore" key={2} />,
-      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Boss" key={3} classes="btn-danger" />,
+      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Tournament Fight" key={3} classes="btn-danger" />,
       <ScreenButton game={this.props.game} screen={InnScreen} text="Inn" key={4} classes="btn-info" />
     ];
     return (
@@ -223,7 +233,7 @@ var FightScreen = React.createClass({
     return {
       training: this.props.extraProps.training,
       currentEnemy: enemy,
-      statusText: enemy.initialText,
+      statusText: this.props.player.class === "darkdeathLord" && enemy.name === "Lord Dark Death" ? ["This is my challenger?  ...Pretty good looking..."] : [enemy.initialText],
       status: "fighting"
     };
   },
@@ -248,12 +258,16 @@ var FightScreen = React.createClass({
       buttons.push(<ScreenButton game={this.props.game} screen={LoseScreen} text="Be dead X_X" key={key++} />);
     }
 
+    var text = arrToDOM(this.state.statusText, "h3", {style: {textAlign: "center"}});
+
     return (
       <div>
       <h1>{title}!</h1>
       <HealthBar current={this.props.player.currentHealth} max={this.props.player.maxHealth} name={this.props.player.name} style={{width: "30%", display: "inline-block"}} />
       <HealthBar current={this.state.currentEnemy.currentHealth} max={this.state.currentEnemy.maxHealth} name={this.state.currentEnemy.name} style={{width: "30%", float: "right"}} />
-      <h3 style={{textAlign: "center"}}>{this.state.statusText}</h3>
+      <div style={{height: "150px"}}>
+        {text}
+      </div>
       <ButtonMenu buttons={buttons} />
       </div>
     );
@@ -279,11 +293,11 @@ var FightScreen = React.createClass({
   //enemy phase
   enemyAction: function(playerResult) {
     if(typeof playerResult === "string"){
-      playerResult = { text: playerResult };
+      playerResult = { text: [playerResult] };
     }
 
     if (playerResult.enemyAction && typeof playerResult.enemyAction === "function") {
-      playerResult.enemyAction();
+      playerResult.enemyAction.call(this);
       return;
     }
 
@@ -291,7 +305,7 @@ var FightScreen = React.createClass({
     var incomingDamage = calculateDamage(this.state.currentEnemy.attack, this.props.player.defense);
 
     //add on to the current text to inform the user
-    playerResult.text += "\n " + this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!";
+    playerResult.text.push("\n " + this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!");
 
     //calculate and apply damage
     incomingDamage <= this.props.player.currentHealth ? this.props.player.currentHealth -= incomingDamage : this.props.player.currentHealth = 0;
@@ -303,18 +317,23 @@ var FightScreen = React.createClass({
   /**
   * see if the battle is over
   *
-  * @param {String} text The default text if neither combatant has died
+  * @param {Array} text The default text if neither combatant has died
   */
   checkState: function(text) {
+    if(typeof text === "string") {
+      text = [text];
+    }
     //check for player lose
     if(this.props.player.currentHealth <= 0) {
+      text.push("You died!");
       this.setState({
-        statusText: "You died!",
+        statusText: text,
         status: "lost"
       });
     } else if(this.state.currentEnemy.currentHealth <= 0) { //check for player win
+        text.push("The enemy " + this.state.currentEnemy.name + " is dead!")
         this.setState({
-          statusText: "The enemy " + this.state.currentEnemy.name + " is dead!",
+          statusText: text,
           status: "won"
         });
     } else { //if nobody died
@@ -332,10 +351,10 @@ var FightScreen = React.createClass({
     //if attempt was successful
     if(attempt < chance) {
       return {
-        text: "You got away!",
+        text: ["You got away!"],
         enemyAction: function() {
           this.props.game.setScreen.call(this.props.game, HubScreen);
-        }.bind(this)
+        }
       };
     } else {
       return "You couldn't get away!";
@@ -454,6 +473,9 @@ var InnScreen = React.createClass({
     this.props.game.forceUpdate();
   }
 });
+
+
+/** COMPONENTS **/
 
 var ButtonMenu = React.createClass({
   render: function() {
