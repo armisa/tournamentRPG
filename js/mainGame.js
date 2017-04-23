@@ -1,6 +1,8 @@
 var DropdownButton = ReactBootstrap.DropdownButton;
 var SplitButton = ReactBootstrap.SplitButton;
 var MenuItem = ReactBootstrap.MenuItem;
+var Tooltip = ReactBootstrap.Tooltip;
+var OverlayTrigger = ReactBootstrap.OverlayTrigger;
 
 /**
 * Turns an array into domelements.  Null value for line break
@@ -164,6 +166,7 @@ var HubScreen = React.createClass({
     var trainingProps = {training: true};
     var fightProps = {training: false};
     var buttons = [
+      <ScreenButton game={this.props.game} screen={StatusScreen} text="Status" key={0} classes="btn-success" />,
       <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" key={1} classes="btn-success" />,
       <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Explore" key={2} />,
       <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Tournament Fight" key={3} classes="btn-danger" />,
@@ -248,7 +251,7 @@ var FightScreen = React.createClass({
       //add specials
       var self = this;
       validItems(this.props.player.specials).forEach(function(special){
-        buttons.push(<ActionButton action={self.playerAction.bind(self, special.performSpecial.bind(self))} text={special.name} classes="btn-info" key={key++} />);
+        buttons.push(<ActionButton action={self.playerAction.bind(self, special.performSpecial.bind(self))} text={special.name} tooltip={special.description} classes="btn-info" key={key++} />);
       });
       buttons.push(<ActionButton action={this.playerAction.bind(this, this.run)} text="Run" classes="btn-danger" key={key++} />);
     } else if(this.state.status === "won") {
@@ -474,6 +477,38 @@ var InnScreen = React.createClass({
   }
 });
 
+var StatusScreen = React.createClass({
+  render: function() {
+
+    var stats = [
+      "Health: " + this.props.player.currentHealth + "/" + this.props.player.maxHealth,
+      "Min Attack: " + this.props.player.minAttack,
+      "Max Attack: " + this.props.player.maxAttack,
+      "Defense: " + this.props.player.defense,
+      "Specials:"
+    ];
+
+    var statsDOM = arrToDOM(stats, "h3");
+    var specialsDOM = [];
+    validItems(this.props.player.specials).forEach(function(special){
+      specialsDOM.push(
+        <ActionButton classes="btn-success" tooltip={special.description} text={special.name} action={function(){}} />
+      );
+      specialsDOM.push(<br />);
+      specialsDOM.push(<br />);
+    });
+
+    return (
+      <div style={{textAlign: "center"}}>
+        {statsDOM}
+        {specialsDOM}
+        <br />
+        <ScreenButton game={this.props.game} screen={HubScreen} text="Go Back" key={0} />
+      </div>
+    );
+  }
+});
+
 
 /** COMPONENTS **/
 
@@ -493,9 +528,20 @@ var ActionButton = React.createClass({
   render: function() {
     var classes = "btn ";
     classes += this.props.classes || "btn-primary";
-    return (
-        <button className={classes} onClick={this.props.action}>{this.props.text}</button>
-    );
+    if(this.props.tooltip){
+      const tooltip = (
+        <Tooltip>{this.props.tooltip}</Tooltip>
+      );
+      return (
+        <OverlayTrigger placement="right" overlay={tooltip}>
+          <button className={classes} onClick={this.props.action} >{this.props.text}</button>
+        </OverlayTrigger>
+      );
+    } else {
+      return (
+          <button className={classes} onClick={this.props.action} >{this.props.text}</button>
+      );
+    }
   }
 });
 

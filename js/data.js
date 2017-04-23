@@ -84,7 +84,7 @@ var specials = {
       player.money += mon;
       return "You beg, and the " + enemy.name + " gives you " + mon + " moneys.";
     },
-    description: "Begs the enemey for some spare change"
+    description: "Begs the enemy for some spare change"
   },
   Fireball: {
     performSpecial: function(player, enemy) {
@@ -159,7 +159,7 @@ var specials = {
   },
   "Hypnosis": {
     performSpecial: function(player, enemy) {
-      var damage = enemy.attack;
+      var damage = Math.ceil(enemy.attack/2);
       damage <= enemy.currentHealth ? enemy.currentHealth -= damage : enemy.currentHealth = 0;
       var statusStr = "You hypnotized the enemy " + enemy.name + ", causing it to deal " + damage + " damage to itself.";
       if(numBetween(0,1) === 0) {
