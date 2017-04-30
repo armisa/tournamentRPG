@@ -149,7 +149,7 @@ var IntroScreen = React.createClass({
   },
   updateName: function(evt){
     this.setState({name: evt.target.value});
-    if(evt.target.value.toUpperCase() === "PHILIP DINKLE"){
+    if(evt.target.value.toUpperCase() === darkdeathName.toUpperCase()){
       var availableClasses = this.props.game.state.availableClasses;
       availableClasses.darkdeathLord = true;
       this.props.game.setState({availableClasses: availableClasses});

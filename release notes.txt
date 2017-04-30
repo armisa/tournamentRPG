@@ -7,4 +7,4 @@ v1.3 - Status screen / tooltip descriptions added
 v1.4 - Upgrade shop / Inn rebalanced
 v1.5 - Explore to unlock new areas (from a progress bar) / find stores and stuff
 v1.6 - Adding new stats / features / skills based on those stats (need to make things more interesting)
-v1.7 - Buttons updated to separate images rather than bootstrap / background / other aesthetic improvements (react-bootstrap tooltip custom overlay for menus?)
+v2.0 - Buttons updated to separate images rather than bootstrap / background / other aesthetic improvements (react-bootstrap tooltip custom overlay for menus?)

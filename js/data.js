@@ -65,17 +65,20 @@ var validItems = function(itemMap) {
 /** Characters **/
 
 var nameArray = [
-  "Aaron",
-  "Barry",
-  "Chris",
-  "David",
-  "Edward",
-  "Frank",
-  "Gary",
-  "Henry",
-  "Ivan",
-  "James"
+  "Philip",
+  "Timmy",
+  "Jimmy",
+  "Albert"
 ];
+
+var lastNameArray = [
+  "Dinkle",
+  "Flowers",
+  "Tinkle",
+  "Sparkle"
+];
+
+var darkdeathName = arrayRandom(nameArray) + " " + arrayRandom(lastNameArray);
 
 var specials = {
   Beg: {
@@ -424,7 +427,7 @@ var bosses = [{
   }
 }, {
   name: "Lord Dark Death",
-  initialText: "My birthname was Philip Dinkle",
+  initialText: "My birthname was " + darkdeathName,
   health: 200,
   attack: 25,
   reward: function() {
