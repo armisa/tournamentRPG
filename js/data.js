@@ -228,6 +228,19 @@ var Special = function(name, available) {
 };
 
 var characters = {
+  cheat: {
+    name: arrayRandom(nameArray),
+    maxHealth: 100,
+    currentHealth: 100,
+    minAttack: 100,
+    maxAttack: 100,
+    defense: 100,
+    money: 100,
+    specials: [
+      "Dev Cheat"
+    ]
+  },
+
   beggar: {
     name: arrayRandom(nameArray),
     maxHealth: 25,
@@ -299,10 +312,22 @@ var Enemy = function(options) {
 };
 
 var shopPrices = {
-  maxHealth: 15,
-  maxAttack: 30,
-  minAttack: 30,
-  defense: 75
+  maxHealth: {
+    base: 0,
+    growth: 1
+  },
+  maxAttack: {
+    base: 15,
+    growth: 3
+  },
+  minAttack: {
+    base: 15,
+    growth: 5
+  },
+  defense: {
+    base: 30,
+    growth: 15
+  }
 };
 
 var trainingEnemies = [{

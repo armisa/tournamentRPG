@@ -38,7 +38,7 @@ var Game = React.createClass({
       player: {},
       currentScreen: IntroScreen, //the starting screen
       displayHUD: false,
-      availableClasses: {beggar: true}
+      availableClasses: {cheat: true, beggar: true}
     };
   },
   //only rendering another screen, passing self and any extra properties
@@ -79,6 +79,9 @@ var Game = React.createClass({
       options.name = name;
     }
     this.setState({player: new Player(options)});
+  },
+  setPlayerStats: function(stats) {
+    this.setState({player: $.extend(this.state.player, stats)});
   }
 });
 
@@ -185,15 +188,21 @@ var HubScreen = React.createClass({
 var UpgradeScreen = React.createClass({
   getInitialState: function() {
     return {
-      message: "Welcome, my pretty!  I have potions of all sorts to make you stronger!"
+      message: "Welcome, my pretty!  I have potions of all sorts to make you stronger!",
+      prices: {
+        maxHealth: this.determinePrice("maxHealth"),
+        maxAttack: this.determinePrice("maxAttack"),
+        minAttack: this.determinePrice("minAttack"),
+        defense: this.determinePrice("defense")
+      }
     }
   },
   render: function() {
     var buttons = [
-      <ActionButton action={this.buy.bind(this,"maxHealth")} text={"Max Health Potion! Cost: " + shopPrices["maxHealth"]} key={1} classes="btn-info" />,
-      <ActionButton action={this.buy.bind(this,"maxAttack")} text={"Max Attack Potion! Cost: " + shopPrices["maxAttack"]} key={2} classes="btn-info" />,
-      <ActionButton action={this.buy.bind(this,"minAttack")} text={"Min Attack Potion! Cost: " + shopPrices["minAttack"]} key={3} classes="btn-info" />,
-      <ActionButton action={this.buy.bind(this,"defense")} text={"Defense Potion! Cost: " + shopPrices["defense"]} key={4} classes="btn-info" />,
+      <ActionButton action={this.buy.bind(this,"maxHealth")} text={"Max Health Potion! Cost: " + this.state.prices["maxHealth"]} key={1} classes="btn-info" />,
+      <ActionButton action={this.buy.bind(this,"maxAttack")} text={"Max Attack Potion! Cost: " + this.state.prices["maxAttack"]} key={2} classes="btn-info" />,
+      <ActionButton action={this.buy.bind(this,"minAttack")} text={"Min Attack Potion! Cost: " + this.state.prices["minAttack"]} key={3} classes="btn-info" />,
+      <ActionButton action={this.buy.bind(this,"defense")} text={"Defense Potion! Cost: " + this.state.prices["defense"]} key={4} classes="btn-info" />,
       <ScreenButton game={this.props.game} screen={HubScreen} text="Back" key={5} />
     ];
     return (
@@ -206,14 +215,22 @@ var UpgradeScreen = React.createClass({
     );
   },
   buy: function(stat) {
-    if(this.props.player.money >= shopPrices[stat]){
-      this.setState({message: "Thank you for your patronage.  I hope you don't mind if I snipped some of your hair."});
-      this.props.player[stat]++;
-      this.props.player.money -= shopPrices[stat];
-      this.props.game.forceUpdate();
+    if(this.props.player.money >= this.state.prices[stat]){
+      var newStats = {money: this.props.player.money - this.state.prices[stat]};
+      newStats[stat] = this.props.player[stat] + 1;
+      this.props.game.setPlayerStats(newStats);
+      var newPrices = $.extend({}, this.state.prices);
+      newPrices[stat] = this.determinePrice(stat);
+      this.setState({
+        message: "Thank you for your patronage.  I hope you don't mind if I snipped some of your hair.",
+        prices: newPrices
+      });
     } else {
       this.setState({message: "You don't quite have enough for that, my pretty.  Perhaps if you sold me some of your toes..."});
     }
+  },
+  determinePrice: function(stat) {
+    return shopPrices[stat].base + this.props.player[stat] * shopPrices[stat].growth;
   }
 });
 
@@ -241,7 +258,7 @@ var FightScreen = React.createClass({
     };
   },
   render: function() {
-    var title = this.state.training ? "Train" : "Fight";
+    var title = this.state.training ? "Explore" : "Fight";
 
     var buttons = [];
     var key = 0;
@@ -431,7 +448,8 @@ var LoseScreen = React.createClass({
 var InnScreen = React.createClass({
   getInitialState: function() {
     return {
-      cost: this.props.player.maxHealth - this.props.player.currentHealth
+      cost: Math.ceil(this.props.player.maxHealth * .75),
+      oneNight: 3
     };
   },
   render: function() {
@@ -441,18 +459,23 @@ var InnScreen = React.createClass({
     var key = 0;
 
     //if you need to heal
-    if(this.state.cost !== 0){
+    if(this.props.player.currentHealth !== this.props.player.maxHealth){
       //prompt the user
       message.push("It'll run ya " + this.state.cost + " gold for enough nights to heal up those wounds.");
+      message.push(<br key={key++} />);
+      message.push("'Course, you can always spend 1 night for " + this.state.oneNight + " gold...'");
 
       //if you can afford it
       if(this.props.player.money >= this.state.cost){
         //button with cost is visible
-        buttons.push(<ActionButton action={this.pay} text={"Pay " + this.state.cost} key={key++}/>);
+        buttons.push(<ActionButton action={this.pay.bind(this, this.state.cost, this.props.player.maxHealth)} text={"Pay " + this.state.cost + " for full health"} key={key++}/>);
+      }
+      if(this.props.player.money >= this.state.oneNight){
+        buttons.push(<ActionButton action={this.pay.bind(this, this.state.oneNight, 1)} text={"Pay " + this.state.oneNight + " for one night"} key={key++} />);
       } else {
         //if you can't afford it, inform user
         message.push(<br key={key++} />);
-        message.push("It doesn't look like you can afford it.");
+        message.push("It doesn't look like you can afford ta stay here.");
       }
     } else {
         //user is healthy
@@ -468,12 +491,15 @@ var InnScreen = React.createClass({
       </div>
     );
   },
-  pay: function() {
+  pay: function(cost, heal) {
     //subtract cost, heal player, and update Inn screen
-    this.props.player.money -= this.state.cost;
-    this.props.player.currentHealth = this.props.player.maxHealth;
-    this.setState({cost: 0});
-    this.props.game.forceUpdate();
+    var newHealth = this.props.player.currentHealth + heal;
+    newHealth = newHealth > this.props.player.maxHealth ? this.props.player.maxHealth : newHealth;
+    var newStats = {
+      money: this.props.player.money - cost,
+      currentHealth: newHealth
+    };
+    this.props.game.setPlayerStats(newStats);
   }
 });
 
