@@ -303,6 +303,61 @@ var Player = function(options) {
   });
   this.class = options.class || "unknown";
   this.currentBoss = 0;
+  this.currentAreas = {
+    Town: {
+      available: [
+        "Status",
+        "Explore",
+        "Tournament Fight"
+      ],
+      order: [
+        {
+          name: "Inn",
+          location: "Town",
+          search: 3
+        },
+        {
+          name: "Upgrade Hut",
+          location: "Town",
+          search: 5
+        },
+        {
+          name: "Field",
+          location: "Explore",
+          search: 7
+        }
+      ],
+      progress: 0,
+      reward: 4
+    },
+    Explore: {
+      available: [
+        "Town"
+      ]
+    },
+    Field: {
+      order: [
+        {
+          name: "Seashore",
+          location: "Explore",
+          search: 15
+        }
+      ],
+      progress: 0,
+      reward:  8
+    },
+    Seashore: {
+      order: [
+        {
+          name: "Mermaid's Grotto",
+          location: "Town",
+          search: 25
+        }
+      ],
+      progress: 0,
+      reward: 16
+    }
+  }
 };
 
 var Enemy = function(options) {
@@ -333,22 +388,66 @@ var shopPrices = {
   }
 };
 
-var trainingEnemies = [{
-  name: "Imp",
-  initialText: "An angry Imp appears!",
-  health: 10,
-  attack: 3
-}, {
-  name: "Pixie",
-  initialText: "A small pixie is looking for a fight!",
-  health: 7,
-  attack: 4
-}, {
-  name: "Goblin",
-  initialText: "A goblin stands before you, ready to battle!",
-  health: 15,
-  attack: 2
-}];
+var exploringEnemies = {
+  Town: [
+    {
+      name: "Ruffian",
+      initialText: "You are confronted by a local ruffian!",
+      health: 6,
+      attack: 2
+    },
+    {
+      name: "Hooligan",
+      initialText: "A hooligan approaches, looking to stir up some trouble!",
+      health: 8,
+      attack: 1
+    },
+    {
+      name: "Ne'er-do-well",
+      initialText: "A ne'er-do-well tries to bamboozle you!",
+      health: 7,
+      attack: 1
+    }
+  ],
+  Field: [
+    {
+      name: "Imp",
+      initialText: "An angry Imp appears!",
+      health: 10,
+      attack: 3
+    }, {
+      name: "Pixie",
+      initialText: "A small pixie is looking for a fight!",
+      health: 7,
+      attack: 4
+    }, {
+      name: "Goblin",
+      initialText: "A goblin approaches wielding a stick!",
+      health: 14,
+      attack: 2
+    }],
+  Seashore: [
+    {
+      name: "Sea Nymph",
+      initialText: "A sea nymph stands before you, ready to battle!",
+      health: 17,
+      attack: 7
+    },
+    {
+      name: "Land Shark",
+      initialText: "A land shark flexes his beefy legs before charging your way!",
+      health: 23,
+      attack: 5
+    },
+    {
+      name: "Crabby Hermit",
+      initialText: "You stumbled upon an ordinary reclusive man.  He's pretty mad though, and living out here has toughened him up!",
+      health: 21,
+      attack: 4
+    }
+  ]
+
+};
 
 /**
  * Increments player's boss state, gives a certain amount of money and unlocks specials!
@@ -435,22 +534,41 @@ var bosses = [{
   }
 }];
 
-basicReward = function() {
-  var money = numBetween(7, 13);
+//reward for defeating common enemies
+basicReward = function(area) {
+  var subMessage = [];
+  var currentArea = this.props.player.currentAreas[area];
+  //money
+  var money = numBetween(currentArea.reward, Math.ceil(currentArea.reward * 1.5)) + 3;
   this.setState({
     currentMessage: "You beat the " + this.props.extraProps.enemy.name + " and gained " + money + " coins."
   });
   this.props.player.money += money;
 
+  //*****Exploration*****
+  //if there's more exploring in this area, progress exploration
+  if(currentArea && currentArea.order && currentArea.order.length) {
+    currentArea.progress++;
+    //if we've reached the next goal area
+    if(currentArea.progress > currentArea.order[0].search){
+      currentArea.progress = 0;
+      var newArea = currentArea.order.shift();
+      this.props.player.currentAreas[newArea.location].available.push(newArea.name);
+      subMessage.push("New area discovered: " + newArea.name + "!");
+    }
+  }
+
   //special ghost rewards
   if (this.props.player.class === "ghost") {
     var healed = Math.floor(Math.random() * 3) + 1;
     this.props.player.currentHealth = Math.min(this.props.player.maxHealth, this.props.player.currentHealth + healed);
-    this.setState({
-      subMessage: "As a ghost, you have absorbed the soul of  " + this.props.extraProps.enemy.name +
-        " and healed by " + healed + "!"
-    });
+    subMessage.push("As a ghost, you have absorbed the soul of  " + this.props.extraProps.enemy.name +
+      " and healed by " + healed + "!");
   }
+
+  this.setState({
+    subMessage: subMessage
+  });
 };
 
 var waiverText1 = "and sound mind and body, do hereby release the creators, staff, and all related parties of the tournament from any liabilities from blah blah blah... " +

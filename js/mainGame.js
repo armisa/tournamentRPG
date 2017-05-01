@@ -166,15 +166,15 @@ var IntroScreen = React.createClass({
 // Main hub area
 var HubScreen = React.createClass({
   render: function() {
-    var trainingProps = {training: true};
-    var fightProps = {training: false};
-    var buttons = [
-      <ScreenButton game={this.props.game} screen={StatusScreen} text="Status" key={0} classes="btn-success" />,
-      <ScreenButton game={this.props.game} screen={UpgradeScreen} text="Upgrade" key={1} classes="btn-success" />,
-      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={trainingProps} text="Explore" key={2} />,
-      <ScreenButton game={this.props.game} screen={FightScreen} extraProps={fightProps} text="Tournament Fight" key={3} classes="btn-danger" />,
-      <ScreenButton game={this.props.game} screen={InnScreen} text="Inn" key={4} classes="btn-info" />
-    ];
+    var exploringProps = {exploring: true};
+    var fightProps = {exploring: false};
+    var buttons = [];
+
+      $.each(this.props.player.currentAreas.Town.available, function(idx, obj){
+        var areaInfo = areaLookup[obj];
+        buttons.push(<ScreenButton game={this.props.game} screen={areaInfo.screen} text={obj} key={idx} classes={areaInfo.classes} />);
+      }.bind(this));
+
     return (
       <div>
         <h1>Hub World:</h1>
@@ -234,6 +234,30 @@ var UpgradeScreen = React.createClass({
   }
 });
 
+//Screen where the player chooses where to explore next
+var ExploreScreen = React.createClass({
+  render: function() {
+    var key = 0; //react key
+
+    var buttons = []; //button array
+
+    $.each(this.props.player.currentAreas.Explore.available, function(idx, obj) {
+      buttons.push(<ScreenButton game={this.props.game} screen={FightScreen} text={obj} extraProps={{exploring: true, area: obj}} classes={"btn-info"} key={key++} />);
+    }.bind(this));
+
+    buttons.push(<ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub" key={key++} />); //back buttons
+
+    return (
+      <div>
+        <h1>
+          Where would you like to explore?
+        </h1>
+        <ButtonMenu buttons={buttons} />
+      </div>
+    );
+  }
+});
+
 //screen where all the fights happen
 var FightScreen = React.createClass({
   componentWillMount: function() {
@@ -244,26 +268,33 @@ var FightScreen = React.createClass({
   },
   getInitialState: function() {
     var enemy;
-    //if we're just training
-    if(this.props.extraProps.training){
-      enemy = new Enemy(arrayRandom(trainingEnemies));
+    var exploring = this.props.extraProps && this.props.extraProps.exploring;
+
+    //if we're just exploring
+    if(exploring){
+      var enemyArray = exploringEnemies[this.props.extraProps.area] || exploringEnemies["Field"]; //default to field if area can't be found
+      enemy = new Enemy(arrayRandom(enemyArray));
     } else { //if we're trying to progress the story
       enemy = new Enemy(bosses[this.props.player.currentBoss]);
     }
+
+    var initialText = this.props.player.class === "darkdeathLord" && enemy.name === "Lord Dark Death" ? ["This is my challenger?  ...Pretty good looking..."] : [enemy.initialText];
+
     return {
-      training: this.props.extraProps.training,
+      exploring: exploring,
       currentEnemy: enemy,
-      statusText: this.props.player.class === "darkdeathLord" && enemy.name === "Lord Dark Death" ? ["This is my challenger?  ...Pretty good looking..."] : [enemy.initialText],
+      statusText: initialText,
       status: "fighting"
     };
   },
   render: function() {
-    var title = this.state.training ? "Explore" : "Fight";
+    var title = this.state.exploring ? "Explore" : "Fight";
 
     var buttons = [];
     var key = 0;
 
-    if(this.state.status === "fighting"){
+    //determine buttons available
+    if(this.state.status === "fighting"){ //if the player is still fighting
       buttons.push(<ActionButton action={this.playerAction.bind(this, this.attack)} text="Attack" key={key++} />);
       //add specials
       var self = this;
@@ -271,24 +302,38 @@ var FightScreen = React.createClass({
         buttons.push(<ActionButton action={self.playerAction.bind(self, special.performSpecial.bind(self))} text={special.name} tooltip={special.description} classes="btn-info" key={key++} />);
       });
       buttons.push(<ActionButton action={this.playerAction.bind(this, this.run)} text="Run" classes="btn-danger" key={key++} />);
-    } else if(this.state.status === "won") {
+    } else if(this.state.status === "won") { //if the player wins, make the WinScreen available
+      var area = this.props.extraProps && this.props.extraProps.area ? this.props.extraProps.area : null;
       buttons.push(<ScreenButton game={this.props.game} screen={WinScreen} text="Collect your winnings"
-        extraProps={{reward: this.state.currentEnemy.reward, enemy: this.state.currentEnemy}} key={key++} />);
-    } else if(this.state.status === "lost") {
+        extraProps={{reward: this.state.currentEnemy.reward, enemy: this.state.currentEnemy, area: area}} key={key++} />);
+    } else if(this.state.status === "lost") { //if the player loses, take them to the game over screen
       buttons.push(<ScreenButton game={this.props.game} screen={LoseScreen} text="Be dead X_X" key={key++} />);
     }
 
     var text = arrToDOM(this.state.statusText, "h3", {style: {textAlign: "center"}});
 
+    if(this.state.exploring) {
+      var areas = this.props.player.currentAreas[this.props.extraProps.area];
+      if(areas && areas.order && areas.order[0]){
+        var exploreProgress = (
+          <HealthBar current={areas.progress} max={areas.order[0].search} name={"Exploration Progress:" + areas.progress + "/" + areas.order[0].search}
+          striped={true} style={{width: "50%", position:"absolute", bottom:"16px", left:"0px", right:"0px", margin:"auto"}} />
+        );
+      }
+    }
+
     return (
       <div>
-      <h1>{title}!</h1>
-      <HealthBar current={this.props.player.currentHealth} max={this.props.player.maxHealth} name={this.props.player.name} style={{width: "30%", display: "inline-block"}} />
-      <HealthBar current={this.state.currentEnemy.currentHealth} max={this.state.currentEnemy.maxHealth} name={this.state.currentEnemy.name} style={{width: "30%", float: "right"}} />
-      <div style={{height: "150px"}}>
-        {text}
-      </div>
-      <ButtonMenu buttons={buttons} />
+        <div style={{margin: "auto"}} >
+          <h1>{title}!</h1>
+          <HealthBar current={this.props.player.currentHealth} max={this.props.player.maxHealth} name={this.props.player.name} style={{width: "30%", display: "inline-block"}} />
+          <HealthBar current={this.state.currentEnemy.currentHealth} max={this.state.currentEnemy.maxHealth} name={this.state.currentEnemy.name} style={{width: "30%", float: "right"}} />
+          <div style={{height: "150px"}}>
+            {text}
+          </div>
+          <ButtonMenu buttons={buttons} />
+        </div>
+        {exploreProgress}
       </div>
     );
   },
@@ -322,7 +367,8 @@ var FightScreen = React.createClass({
     }
 
     //calculate enemy damage
-    var incomingDamage = calculateDamage(this.state.currentEnemy.attack, this.props.player.defense);
+    var damage = numBetween(Math.ceil(this.state.currentEnemy.attack * .6), Math.ceil(this.state.currentEnemy.attack * 1.4)); //give some variety in potential damage
+    var incomingDamage = calculateDamage(damage, this.props.player.defense);
 
     //add on to the current text to inform the user
     playerResult.text.push("\n " + this.state.currentEnemy.name + " hits back for " + incomingDamage + " damage!");
@@ -389,18 +435,34 @@ var WinScreen = React.createClass({
     }
   },
   render: function() {
+    var subMessage = arrToDOM(this.state.subMessage, "h3");
     return (
       <div style={{textAlign: "center"}}>
         <h3>{this.state.currentMessage}</h3>
-        <h3>{this.state.subMessage}</h3>
+        {subMessage ? subMessage : <br />}
+        {this.props.extraProps.area !== null &&
+          <div>
+            <br />
+            <ScreenButton game={this.props.game} screen={ExploreScreen} text="Explore somewhere else?" />
+            <br />
+            <h3 style={{ textAlign: "center" }}>Or...</h3>
+          </div>
+        }
         <ScreenButton game={this.props.game} screen={HubScreen} text="Return to the hub!" />
+        {this.props.extraProps.area !== null &&
+          <div>
+            <h3 style={{ textAlign: "center" }}>OR...</h3>
+            <ScreenButton game={this.props.game} screen={FightScreen} text={"Explore the " + this.props.extraProps.area + " some more!"}
+            extraProps={{exploring: true, area: this.props.extraProps.area}} classes={"btn-success"} />
+          </div>
+        }
       </div>
     );
   },
   componentDidMount: function() {
     //grant player reward
     var reward = this.props.extraProps.reward || basicReward;
-    reward.call(this);
+    reward.call(this, this.props.extraProps.area);
     //end game check
     if(this.props.player.currentBoss === bosses.length){
       this.props.game.setScreen(GameEndScreen)
@@ -412,7 +474,7 @@ var GameEndScreen = React.createClass({
   render: function() {
     var key = 0;
 
-    var message = ["You beat the entire game!  You're a champion!", <br key={key++} />, <br key={key++} />, "Credits:", <br key={key++} />, "Everything: Aaron Isaacman"];
+    var message = ["You beat the entire game!  You're a champion!", <br key={key++} />, <br key={key++} />, "Credits:", <br key={key++} />, "Literally everything: Aaron Isaacman"];
     return (
       <div>
       <h1>{message}</h1>
@@ -535,6 +597,31 @@ var StatusScreen = React.createClass({
   }
 });
 
+var MermaidScreen = React.createClass({
+  render: function() {
+    return (
+      <div>
+        <h3>
+          You enter the grotto to find a mermaid!
+        </h3>
+        <h3>
+          She slowly swims up to your feet, rests her arms over the rock, and looks at you with a wry smile before speaking these words:
+        </h3>
+        <h3>
+          "I don't do anything in this version of the game," she says. Speak once more, o beautious angel!
+        </h3>
+        <h3>
+          "Come back when I've been implemented, I'll be a secret class."
+        </h3>
+        <h3>
+          And with a wink and a splash, she swims off.
+        </h3>
+        <ScreenButton game={this.props.game} screen={HubScreen} text="Go Back" />
+      </div>
+    );
+  }
+})
+
 
 /** COMPONENTS **/
 
@@ -601,6 +688,9 @@ var HealthBar = React.createClass({
     }
 
     barColor += " progress-bar";
+    if(this.props.striped){
+      barColor += " progress-bar-striped";
+    }
 
     return (
       <div style={this.props.style}>
@@ -619,3 +709,30 @@ ReactDOM.render(
   <Game />,
   document.getElementById('content')
 );
+
+var areaLookup = {
+  "Status": {
+    screen: StatusScreen,
+    classes: "btn-info"
+  },
+  "Explore": {
+    screen: ExploreScreen,
+    classes: "btn-primary"
+  },
+  "Tournament Fight": {
+    screen: FightScreen,
+    classes: "btn-danger"
+  },
+  "Upgrade Hut": {
+    screen: UpgradeScreen,
+    classes: "btn-success"
+  },
+  "Inn": {
+    screen: InnScreen,
+    classes: "btn-success"
+  },
+  "Mermaid's Grotto": {
+    screen: MermaidScreen,
+    classes: "btn-info"
+  }
+};

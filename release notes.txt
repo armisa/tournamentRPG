@@ -7,4 +7,15 @@ v1.3 - Status screen / tooltip descriptions added
 v1.4 - Upgrade shop / Inn rebalanced
 v1.5 - Explore to unlock new areas (from a progress bar) / find stores and stuff
 v1.6 - Adding new stats / features / skills based on those stats (need to make things more interesting)
+v1.6.1 - Adding stamina to skill usage
+v1.6.2 - collapsing skills into button Dropdown
+v1.6.3 - Adding items
+v1.6.4 - adding item shop
+v1.6.5 - creating new skills based more around stamina
+v1.6.6 - adding "rest" option in battle to restore small amount of stamina
+v1.7 - Adding more information
+v1.7.1 - Exploration meters and what you'll find next on explore buttons
+v1.7.2 - exploration menu removed and replaced with dropdown button in Town screen (Or decision made over whether to do this)
+v1.7.3 - attack and defense info added to fight screen
+v1.7.4 - Tournament ranking in town screen
 v2.0 - Buttons updated to separate images rather than bootstrap / background / other aesthetic improvements (react-bootstrap tooltip custom overlay for menus?)
